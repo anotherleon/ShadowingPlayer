@@ -9,6 +9,7 @@ export default class App extends Component {
     render() {
         return (
             <View style={styles.container}>
+                <Text>测试</Text>
                 <FolderList />
                 {/* <PlayerFullScreen /> */}
                 {/* <PlayerBasic /> */}
