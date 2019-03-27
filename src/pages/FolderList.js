@@ -1,9 +1,9 @@
 import React from "react";
-import { StyleSheet, View, Text } from "react-native";
+import { StyleSheet, ScrollView, View, Text } from "react-native";
 
 var RNFS = require("react-native-fs");
-
-const scanDirectory = async (path = RNFS.PicturesDirectoryPath) => {
+let result = {};
+const scanDirectory = async (path = RNFS.ExternalStorageDirectoryPath, callback) => {
     // RNFS.readDir(path) // On Android, use "RNFS.DocumentDirectoryPath" (MainBundlePath is not defined)
     //     .then(result => {
     //         return Promise.all(result.map(item => RNFS.stat(item.path)));
@@ -41,82 +41,88 @@ const scanDirectory = async (path = RNFS.PicturesDirectoryPath) => {
     //     });
     // RNFS.scanFile(RNFS.PicturesDirectoryPath ).then(console.log)
     // console.log(RNFS.DocumentDirectoryPath )
-    const res = await RNFS.readDir(path).then(result =>
-        Promise.all(result.map(item =>RNFS.stat(item.path)))
-    );
-
-    return await Promise.all(
-        res.map(async item => {
-            const i = item.path.lastIndexOf("/");
-            return {
-                name: item.path.slice(i + 1), // item.name
-                isDirectory: item.isDirectory(),
-                children: item.isDirectory() ? await scanDirectory(item.path) : [],
-            };
-        }),
-    );
+    callback && callback(path);
+    // if (path.includes("com") || path.includes("Android")) return [];
+    const res = await RNFS.readDir(path);
+    // .then(result =>
+    //     Promise.all(result.map(item =>RNFS.stat(item.path)))
+    // );
+    res.forEach(item => {
+        if (item.isFile()) {
+            let type = getType(item.name);
+            let path = getPath(item.path);
+            console.log(type);
+            if (type === "plist") {
+                // result.push({
+                //     path: getPath(item.path),
+                //     name: item.name,
+                //     type: type,
+                // });
+                const obj = {
+                    path: path,
+                    name: item.name,
+                    type: type,
+                };
+                result[path] = Array.isArray(result[path]) ? result[path].push(obj) : [obj];
+            }
+        }
+        if (item.isDirectory()) {
+            scanDirectory(item.path);
+        }
+    });
+    console.log(result);
+    // return await Promise.all(
+    //     res.map(async item => {
+    //         const i = item.path.lastIndexOf("/");
+    //         console.log(item);
+    //         return {
+    //             name: item.name, // item.path.slice(i + 1),  item.name,
+    //             children: item.isDirectory() ? await scanDirectory(item.path) : [],
+    //         };
+    //     }),
+    // );
 };
 
-// const asyncReadFile = async callback => {
-//     const res = await scanDirectory();
-//     console.log(res);
-//     callback(res);
-// };
+function getType(name) {
+    let i = name.lastIndexOf(".");
+    return name.substr(i + 1);
+}
 
-// const directory = scanDirectory();
+function getPath(path) {
+    let i = path.lastIndexOf("/");
+    return path.substr(0, i);
+}
 
 export default class FolderList extends React.Component {
     state = {
         folder: [],
+        scanPath: "",
     };
     componentWillMount() {
-        // console.log("xxxxxxxxxxxx", scanDirectory);
-        // this.setState(async () => {
-        //     const res = await scanDirectory();
-        //     console.log("xxxxxxxxxxxx", res);
-        //     return {
-        //         folder: res,
-        //     };
-        // });
-        // asyncReadFile(res => {
-        //     this.setState({
-        //         folder: res,
-        //     });
-        // });
-
-        // Correct
-        // this.setState((prevState, props) => ({
-        //     counter: prevState.counter + props.increment,
-        // }));
-
-        scanDirectory('/storage/emulated/0/00leon').then(res => {
-            console.log(res);
+        // RNFS.ExternalStorageDirectoryPath '/storage/emulated/0/00leon' RNFS.DocumentDirectoryPath '/Users/wangliang/Library'
+        scanDirectory(RNFS.MainBundlePath, path => {
             this.setState({
-                folder: res,
+                scanPath: path,
+            });
+        }).then(res => {
+            // console.log(res);
+            this.setState({
+                folder: result.values(),
             });
         });
     }
 
-    renderItem = () => {
-        const dir = [];
-        {
-            this.state.folder.map((item, index) => <Text key={index}>{item.name + "\t是否是目录：" + item.isDirectory}</Text>);
-        }
-
-        this.state.folder.reduce((acc, cur, index, array) => {
-            acc.push(<Text key={index}>{cur.name}</Text>);
-        }, []);
-    };
-
     render() {
         return (
-            <View style={styles.container}>
-                <Text>{RNFS.ExternalStorageDirectoryPath}</Text>
+            <ScrollView style={styles.container}>
+                {/* <Text>{RNFS.ExternalStorageDirectoryPath}</Text> */}
+                <Text>{this.state.scanPath}</Text>
+
                 {/* <Text>{RNFS.ExternalDirectoryPath}</Text>
                 <Text>{RNFS.PicturesDirectoryPath}</Text> */}
                 {/* {this.renderItem()} */}
                 <Item data={this.state.folder} />
-            </View>
+            </ScrollView>
         );
     }
 }
