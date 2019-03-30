@@ -4,13 +4,23 @@ import Player from "./Player";
 import PlayerFullScreen from "./PlayerFullScreen";
 import PlayerBasic from "./PlayerBasic";
 import FolderList from "./FolderList";
+class Home extends Component {
+    static navigationOptions = {
+        title: "本地视频",
+        headerStyle: {
+            backgroundColor: "#0099CC",
+        },
+        headerTintColor: "#fff",
+        // headerTitleStyle: {
+        //     fontWeight: "bold",
+        // },
+    };
 
-export default class App extends Component {
     render() {
+        console.log(this.props);
         return (
             <View style={styles.container}>
-                <Text>测试</Text>
-                <FolderList />
+                <FolderList/>
                 {/* <PlayerFullScreen /> */}
                 {/* <PlayerBasic /> */}
             </View>
@@ -21,9 +31,7 @@ export default class App extends Component {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-        marginTop: 44,
-        backgroundColor: "#F5FCFF",
     },
 });
+
+export default Home;

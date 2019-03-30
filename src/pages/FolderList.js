@@ -1,9 +1,11 @@
 import React from "react";
-import { StyleSheet, ScrollView, View, Text } from "react-native";
+import { StyleSheet, ScrollView, View, Text, Image, TouchableOpacity } from "react-native";
+import Icon from "../assets/Icon";
+// import { TouchableOpacity } from "react-native-gesture-handler";
 
 var RNFS = require("react-native-fs");
-let result = {};
-const scanDirectory = async (path = RNFS.ExternalStorageDirectoryPath, callback) => {
+let result = [];
+const scanDirectory = async (path = RNFS.ExternalStorageDirectoryPath, dirName) => {
     // RNFS.readDir(path) // On Android, use "RNFS.DocumentDirectoryPath" (MainBundlePath is not defined)
     //     .then(result => {
     //         return Promise.all(result.map(item => RNFS.stat(item.path)));
@@ -41,36 +43,58 @@ const scanDirectory = async (path = RNFS.ExternalStorageDirectoryPath, callback)
     //     });
     // RNFS.scanFile(RNFS.PicturesDirectoryPath ).then(console.log)
     // console.log(RNFS.DocumentDirectoryPath )
-    callback && callback(path);
     // if (path.includes("com") || path.includes("Android")) return [];
     const res = await RNFS.readDir(path);
     // .then(result =>
     //     Promise.all(result.map(item =>RNFS.stat(item.path)))
     // );
-    res.forEach(item => {
-        if (item.isFile()) {
-            let type = getType(item.name);
-            let path = getPath(item.path);
-            console.log(type);
-            if (type === "plist") {
-                // result.push({
-                //     path: getPath(item.path),
-                //     name: item.name,
-                //     type: type,
-                // });
-                const obj = {
-                    path: path,
-                    name: item.name,
-                    type: type,
-                };
-                result[path] = Array.isArray(result[path]) ? result[path].push(obj) : [obj];
-            }
+    // res.forEach(async item => {
+    //     if (item.isFile()) {
+    //         let type = getType(item.name);
+    //         // let path = getPath(item.path);
+    //         console.log(type);
+    //         if (type === "plist") {
+    //             // result.push({
+    //             //     path: getPath(item.path),
+    //             //     name: item.name,
+    //             //     type: type,
+    //             // });
+    //             const obj = {
+    //                 path: path,
+    //                 name: item.name,
+    //                 type: type,
+    //             };
+    //             // result[path] = Array.isArray(result[path]) ? result[path].push(obj) : [obj];
+    //             result.push(obj);
+    //         }
+    //         console.log("result===========", result);
+    //     }
+    //     if (item.isDirectory()) {
+    //         await scanDirectory(item.path);
+    //     }
+    // });
+    console.log(res.length);
+    for (let item of res) {
+        let type = getType(item.name);
+        // console.log(item);
+        // if (item.isFile() && type === "plist") {
+        if (item.isFile() && isAudio(type)) {
+            const obj = {
+                dirPath: path,
+                dirName,
+                filePath: item.path,
+                name: item.name,
+                type: type,
+            };
+            result.push(obj);
         }
         if (item.isDirectory()) {
-            scanDirectory(item.path);
+            await scanDirectory(item.path, item.name);
         }
-    });
-    console.log(result);
+    }
+
+    return result;
+    // console.log(result);
     // return await Promise.all(
     //     res.map(async item => {
     //         const i = item.path.lastIndexOf("/");
@@ -83,6 +107,10 @@ const scanDirectory = async (path = RNFS.ExternalStorageDirectoryPath, callback)
     // );
 };
 
+function isAudio(type) {
+    return ["mp3","mp4", "wma", "wav", 'm4a'].includes(type);
+}
+
 function getType(name) {
     let i = name.lastIndexOf(".");
     return name.substr(i + 1);
@@ -94,34 +122,61 @@ function getPath(path) {
 }
 
 export default class FolderList extends React.Component {
+    static navigationOptions = {
+        title: "本地音频",
+        headerStyle: {
+            backgroundColor: "#0099CC",
+        },
+        headerTintColor: "#fff",
+        headerBackTitle: null,
+    };
     state = {
         folder: [],
         scanPath: "",
     };
     componentWillMount() {
-        // RNFS.ExternalStorageDirectoryPath '/storage/emulated/0/00leon' RNFS.DocumentDirectoryPath '/Users/wangliang/Library'
-        scanDirectory(RNFS.MainBundlePath, path => {
+        // RNFS.ExternalStorageDirectoryPath RNFS.MainBundlePath '/storage/emulated/0/00leon' RNFS.DocumentDirectoryPath '/Users/wangliang/Library'
+        scanDirectory("/storage/emulated/0/00leon", "/").then(res => {
+            // console.log('/storage/emulated/0/00leon', res);
             this.setState({
-                scanPath: path,
-            });
-        }).then(res => {
-            // console.log(res);
-            this.setState({
-                folder: result.values(),
+                folder: res.map(item => {
+                    return {
+                        ...item,
+                    };
+                }),
             });
         });
     }
 
     render() {
+        // console.log(this.props)
         return (
             <ScrollView style={styles.container}>
                 {/* <Text>{RNFS.ExternalStorageDirectoryPath}</Text> */}
-                <Text>{this.state.scanPath}</Text>
+                {/* <Text>{this.state.scanPath}</Text> */}
 
+                {this.state.folder.map((item, index) => (
+                    <TouchableOpacity
+                        onPress={() =>
+                            this.props.navigation.push("AudioList", {
+                                dirName: item.dirName,
+                                fileList: this.state.folder.filter(i => i.path === item.path),
+                            })
+                        }
+                        style={styles.listItemWrapper}
+                        key={index}
+                    >
+                        <Image source={{ uri: Icon.folderAudio }} style={{ width: 64, height: 64, marginRight: 8 }} />
+                        <View>
+                            <Text>{item.dirName}</Text>
+                            <Text>{item.filePath}</Text>
+                        </View>
+                    </TouchableOpacity>
+                ))}
                 {/* <Text>{RNFS.ExternalDirectoryPath}</Text>
                 <Text>{RNFS.PicturesDirectoryPath}</Text> */}
                 {/* {this.renderItem()} */}
-                <Item data={this.state.folder} />
+                {/* <Item data={this.state.folder} /> */}
             </ScrollView>
         );
     }
@@ -139,7 +194,15 @@ const Item = props => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        height: 300,
-        width: 300,
+        paddingTop: 8,
+        // height: 300,
+        // width: 300,
+    },
+    listItemWrapper: {
+        flexDirection: "row",
+        alignItems: "center",
+        paddingHorizontal: 16,
+        borderBottomWidth: StyleSheet.hairlineWidth,
+        borderColor: "#EDEDF0",
     },
 });

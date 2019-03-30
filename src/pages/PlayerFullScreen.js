@@ -5,6 +5,14 @@ import Video from "react-native-video";
 import Util from "../Utils";
 
 export default class VideoPlayer extends Component {
+    static navigationOptions = {
+        title: "Focus Player",
+        headerStyle: {
+            backgroundColor: "#0099CC",
+        },
+        headerTintColor: "#fff",
+        headerBackTitle: null,
+    };
     constructor(props) {
         super(props);
         this.onLayout = this.onLayout.bind(this);
@@ -15,14 +23,17 @@ export default class VideoPlayer extends Component {
     }
 
     render() {
+        const { navigation } = this.props;
+        const filePath = navigation.getParam("filePath");
         return (
             <View onLayout={this.onLayout} style={styles.container}>
-                <Text>Here's some pre-Text</Text>
                 <Video
+                    audioOnly={true}
                     ref={video => {
                         this.videoPlayer = video;
                     }}
-                    source={require("./assets/broadchurch.mp4")}
+                    source={{ uri: "file://" + filePath }}
+                    // source={require("../assets/city_of_star.m4a")}
                     style={{ width: this.state.orientationWidth, height: this.state.orientationHeight }}
                     controls={true}
                 />

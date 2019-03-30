@@ -152,7 +152,7 @@ class VideoPlayer extends Component {
         );
     }
 
-    renderCustomSkin() {
+    renderCustomSkin(filePath) {
         const flexCompleted = this.getCurrentTimePercentage() * 100;
         const flexRemaining = (1 - this.getCurrentTimePercentage()) * 100;
 
@@ -165,18 +165,16 @@ class VideoPlayer extends Component {
                     }}
                 >
                     <Video
+                        audioOnly={true}
+                        // source={require("../assets/broadchurch.mp4")}
                         // source={{
-                        //     uri:
-                        //         "http://www.youtube.com/api/manifest/dash/id/bf5bb2419360daf1/source/youtube?as=fmp4_audio_clear,fmp4_sd_hd_clear&sparams=ip,ipbits,expire,source,id,as&ip=0.0.0.0&ipbits=0&expire=19000000000&signature=51AF5F39AB0CEC3E5497CD9C900EBFEAECCCB5C7.8506521BFC350652163895D4C26DEE124209AA9E&key=ik0",
-                        //     type: "mpd",
+                        //     uri:"https://m701.music.126.net/20190325161021/f235e93fa6acc80da7a920bcb5b14585/jdyyaac/5352/0708/0552/d820bb56690b520b21ad28791637662d.m4a"
                         // }}
-                        // source={require("../../broadchurch.mp4")}
-                        source={{
-                            uri:"https://m701.music.126.net/20190325161021/f235e93fa6acc80da7a920bcb5b14585/jdyyaac/5352/0708/0552/d820bb56690b520b21ad28791637662d.m4a"
-                        }}
+                        // source={require("../assets/city_of_star.m4a")}
+                        source={{ uri: "file://" + filePath }}
                         style={styles.fullScreen}
                         rate={this.state.rate}
-                        paused={this.state.paused}
+                        // paused={this.state.paused}
                         volume={this.state.volume}
                         muted={this.state.muted}
                         ignoreSilentSwitch={this.state.ignoreSilentSwitch}
@@ -258,18 +256,14 @@ class VideoPlayer extends Component {
         );
     }
 
-    renderNativeSkin() {
+    renderNativeSkin(filePath) {
         const videoStyle = this.state.skin == "embed" ? styles.nativeVideoControls : styles.fullScreen;
         return (
             <View style={styles.container}>
                 <View style={styles.fullScreen}>
                     <Video
-                        // source={require("../../broadchurch.mp4")}
-                        source={{
-                            uri:
-                                "http://www.youtube.com/api/manifest/dash/id/bf5bb2419360daf1/source/youtube?as=fmp4_audio_clear,fmp4_sd_hd_clear&sparams=ip,ipbits,expire,source,id,as&ip=0.0.0.0&ipbits=0&expire=19000000000&signature=51AF5F39AB0CEC3E5497CD9C900EBFEAECCCB5C7.8506521BFC350652163895D4C26DEE124209AA9E&key=ik0",
-                            type: "mpd",
-                        }}
+                        // source={require("../assets/city_of_star.m4a")}
+                        source={{ uri: "file://" + filePath }}
                         style={videoStyle}
                         rate={this.state.rate}
                         paused={this.state.paused}
@@ -348,7 +342,10 @@ class VideoPlayer extends Component {
     }
 
     render() {
-        return this.state.controls ? this.renderNativeSkin() : this.renderCustomSkin();
+        const { navigation } = this.props;
+        const filePath = navigation.getParam("filePath");
+        // AlertIOS.alert(filePath);
+        return this.state.controls ? this.renderNativeSkin(filePath) : this.renderCustomSkin(filePath);
     }
 }
 
