@@ -4,7 +4,7 @@ import Icon from "../assets/Icon";
 // import { TouchableOpacity } from "react-native-gesture-handler";
 
 var RNFS = require("react-native-fs");
-let result = [];
+let result = {};
 const scanDirectory = async (path = RNFS.ExternalStorageDirectoryPath, dirName) => {
     // RNFS.readDir(path) // On Android, use "RNFS.DocumentDirectoryPath" (MainBundlePath is not defined)
     //     .then(result => {
@@ -73,7 +73,7 @@ const scanDirectory = async (path = RNFS.ExternalStorageDirectoryPath, dirName) 
     //         await scanDirectory(item.path);
     //     }
     // });
-    console.log(res.length);
+    // console.log(res.length);
     for (let item of res) {
         let type = getType(item.name);
         // console.log(item);
@@ -86,7 +86,12 @@ const scanDirectory = async (path = RNFS.ExternalStorageDirectoryPath, dirName) 
                 name: item.name,
                 type: type,
             };
-            result.push(obj);
+            // result.push(obj);
+            if (Array.isArray(result[path])) {
+                result[path].push(obj);
+            } else {
+                result[path] = [obj];
+            }
         }
         if (item.isDirectory()) {
             await scanDirectory(item.path, item.name);
@@ -108,7 +113,7 @@ const scanDirectory = async (path = RNFS.ExternalStorageDirectoryPath, dirName) 
 };
 
 function isAudio(type) {
-    return ["mp3","mp4", "wma", "wav", 'm4a'].includes(type);
+    return ["mp3", "mp4", "wma", "wav", "m4a"].includes(type);
 }
 
 function getType(name) {
@@ -139,28 +144,25 @@ export default class FolderList extends React.Component {
         scanDirectory("/storage/emulated/0/00leon", "/").then(res => {
             // console.log('/storage/emulated/0/00leon', res);
             this.setState({
-                folder: res.map(item => {
-                    return {
-                        ...item,
-                    };
-                }),
+                folder: {...res},
             });
         });
     }
 
     render() {
         // console.log(this.props)
+        const folders = Object.keys(this.state.folder);
         return (
             <ScrollView style={styles.container}>
                 {/* <Text>{RNFS.ExternalStorageDirectoryPath}</Text> */}
                 {/* <Text>{this.state.scanPath}</Text> */}
 
-                {this.state.folder.map((item, index) => (
+                {folders.map((item, index) => (
                     <TouchableOpacity
                         onPress={() =>
                             this.props.navigation.push("AudioList", {
-                                dirName: item.dirName,
-                                fileList: this.state.folder.filter(i => i.path === item.path),
+                                dirName: this.state.folder[item][0].dirName,
+                                fileList: this.state.folder[item] // this.state.folder.filter(i => i.path === item.path),
                             })
                         }
                         style={styles.listItemWrapper}
@@ -168,8 +170,8 @@ export default class FolderList extends React.Component {
                     >
                         <Image source={{ uri: Icon.folderAudio }} style={{ width: 64, height: 64, marginRight: 8 }} />
                         <View>
-                            <Text>{item.dirName}</Text>
-                            <Text>{item.filePath}</Text>
+                            {/* <Text>{this.state.folder[item]}</Text> */}
+                            <Text>{this.state.folder[item][0].dirName}</Text>
                         </View>
                     </TouchableOpacity>
                 ))}
