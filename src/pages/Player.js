@@ -1,45 +1,202 @@
-import React from "react";
-import { StyleSheet, View, Text } from "react-native";
-import Video from "react-native-video";
+import React from 'react';
+import { Dimensions, StyleSheet, View, ImageBackground, Text, TouchableOpacity, Button } from 'react-native';
+import TouchableImage from './components/TouchableImage';
+import Video from 'react-native-video';
+import Icon from '../assets/Icon';
+import AudioList from './components/AudioList';
 
+const SCREEN_WIDTH = Dimensions.get('window').width;
 class Player extends React.Component {
+    static navigationOptions = {
+        title: 'Audio Plyer',
+        headerStyle: {
+            backgroundColor: '#0099CC',
+        },
+        headerTintColor: '#fff',
+        headerBackTitle: null,
+    };
     state = {
-        paused: true,
-        totalLength: 1,
-        currentPosition: 0,
-        selectedTrack: 0,
-        repeatOn: false,
-        shuffleOn: false,
+        filePath: '',
+        fileList: [],
+        paused: false,
+        duration: 0.0,
+        currentTime: 0.0,
+        rate: 1,
+        volume: 1,
+        muted: false,
+        repeat: false,
+        mode: 'repeat', // repeat random
     };
-    setDuration = data => {
-        // console.log(totalLength);
-        this.setState({ totalLength: Math.floor(data.duration) });
+    componentWillMount() {
+        const { navigation } = this.props;
+        const filePath = navigation.getParam('filePath');
+        const fileList = navigation.getParam('fileList') || [];
+        this.setState({
+            filePath,
+            fileList,
+        });
+    }
+    handleLoad = data => {
+        this.setState({ duration: Math.floor(data.duration) });
+    };
+    handleProgress = data => {
+        this.setState({ currentTime: data.currentTime });
+    };
+    getCurrentTimePercentage() {
+        if (this.state.currentTime > 0) {
+            return parseFloat(this.state.currentTime) / parseFloat(this.state.duration);
+        } else {
+            return 0;
+        }
+    }
+    handlePlay = () => {
+        if (this.state.paused && Math.floor(this.state.currentTime) === this.state.duration) {
+            this.player.seek(0);
+        }
+        this.setState({
+            paused: !this.state.paused,
+        });
+    };
+    handleSeek = second => {
+        this.player.seek(this.state.currentTime + second);
     };
 
-    setTime = data => {
-        //console.log(data);
-        this.setState({ currentPosition: Math.floor(data.currentTime) });
+    handleNext = next => {
+        let i = this.state.fileList.findIndex(item => item.filePath === this.state.filePath);
+        console.log(i);
+        if (i < 0) {
+            return;
+        }
+        const len = this.state.fileList.length;
+        const mode = this.state.mode;
+        if (mode === 'repeat' || mode === 'repeatOnce') {
+            if (i + next < 0 || i + next >= len) {
+                return;
+            }
+            this.setState({
+                filePath: this.state.fileList[i + next].filePath,
+            });
+        } else if (mode === 'random') {
+            const r = Math.floor(Math.random() * len);
+            this.setState({
+                filePath: next === 1 ? this.state.fileList[r] : this.state.fileList[i + next],
+            });
+        }
     };
 
+    handleMode = () => {
+        const mode = this.state.mode;
+        if (mode === 'repeat') {
+            this.setState({
+                mode: 'random',
+                repeat: false,
+            });
+        } else if (mode === 'random') {
+            this.setState({
+                mode: 'repeatOnce',
+                repeat: true,
+            });
+        } else if (mode === 'repeatOnce') {
+            this.setState({
+                mode: 'repeat',
+                repeat: false,
+            });
+        }
+    };
+
+    handleProgressPress = e => {
+        const pageX = e.nativeEvent.pageX;
+        const seekTime = Math.floor(((pageX - 4) / (SCREEN_WIDTH - 8)) * this.state.duration);
+        !!seekTime && this.player.seek(seekTime);
+    };
+
+    handleEnd = () => {
+        this.setState({
+            paused: true,
+        });
+    };
     render() {
+        const flexCompleted = this.getCurrentTimePercentage() * 100;
+        const flexRemaining = (1 - this.getCurrentTimePercentage()) * 100;
+
         return (
             <View style={styles.container}>
-                <Text>播放器</Text>
-                <Video
-                    source={{ uri: TRACKS.audioUrl }} // Can be a URL or a local file.
-                    ref={ref => {
-                        this.player = ref;
-                    }}
-                    paused={this.state.paused} // Pauses playback entirely.
-                    resizeMode="cover" // Fill the whole screen at aspect ratio.
-                    repeat={true} // Repeat forever.
-                    // onLoadStart={this.loadStart} // Callback when video starts to load
-                    onLoad={this.setDuration} // Callback when video loads
-                    onProgress={this.setTime} // Callback every ~250ms with currentTime
-                    // onEnd={this.onEnd} // Callback when playback finishes
-                    // onError={this.videoError} // Callback when video cannot be loaded
-                    style={styles.audio}
-                />
+                {/* <TouchableImage src={Icon.front} size={375} /> */}
+                <ImageBackground source={require('../assets/backgroud.png')} style={{ flex: 1 }}>
+                    {/* <AudioList fileList={this.state.fileList} /> */}
+                    <Video
+                        ref={ref => (this.player = ref)}
+                        audioOnly={true}
+                        // source={require('../assets/city_of_star.m4a')}
+                        source={{ uri: 'file://' + this.state.filePath }}
+                        paused={this.state.paused}
+                        volume={this.state.volume}
+                        muted={this.state.muted}
+                        repeat={this.state.repeat}
+                        rate={this.state.rate}
+                        playInBackground={true}
+                        // onLoadStart={this.loadStart} // Callback when video starts to load
+                        onLoad={this.handleLoad} // Callback when video loads
+                        onProgress={this.handleProgress} // Callback every ~250ms with currentTime
+                        onEnd={this.handleEnd} // Callback when playback finishes
+                        // onError={this.videoError} // Callback when video cannot be loaded
+                        style={styles.audio}
+                    />
+
+                    <View style={styles.controlWrapper}>
+                        <Button
+                            title={this.state.mode}
+                            onPress={() => {
+                                this.handleMode();
+                            }}
+                        />
+
+                        <View style={styles.controls}>
+                            <TouchableImage
+                                src={Icon.prev}
+                                size={36}
+                                onPress={() => {
+                                    this.handleNext(-1);
+                                }}
+                            />
+                            <View style={{ marginHorizontal: 16 }}>
+                                <TouchableImage src={this.state.paused ? Icon.play : Icon.pause} size={48} onPress={this.handlePlay} />
+                            </View>
+                            <TouchableImage
+                                src={Icon.next}
+                                size={36}
+                                onPress={() => {
+                                    this.handleNext(1);
+                                }}
+                            />
+                        </View>
+                        <View style={styles.seekWrapper}>
+                            <TouchableOpacity
+                                onPress={() => {
+                                    this.handleSeek(-10);
+                                }}
+                            >
+                                <View style={styles.seek}>
+                                    <Text style={styles.seekText}>-10S</Text>
+                                </View>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={{ marginLeft: 48 }}
+                                onPress={() => {
+                                    this.handleSeek(10);
+                                }}
+                            >
+                                <View style={styles.seek}>
+                                    <Text style={styles.seekText}>+10S</Text>
+                                </View>
+                            </TouchableOpacity>
+                        </View>
+                        <TouchableOpacity activeOpacity={1} style={styles.progress} onPress={this.handleProgressPress}>
+                            <View style={[styles.innerProgressCompleted, { flex: flexCompleted }]} />
+                            <View style={[styles.innerProgressRemaining, { flex: flexRemaining }]} />
+                        </TouchableOpacity>
+                    </View>
+                </ImageBackground>
             </View>
         );
     }
@@ -48,41 +205,57 @@ class Player extends React.Component {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: "#ccc",
+        backgroundColor: '#000',
     },
     audio: {
-        // flex:1,
-        height: 50,
-        // width: 375,
-        position: "absolute",
-        top: 0,
-        left: 0,
-        bottom: 0,
-        right: 0,
+        // height: 150,
+        // width: 300,
+        backgroundColor: '#fff',
+    },
+    controlWrapper: {
+        borderRadius: 4,
+        position: 'absolute',
+        bottom: 44,
+        left: 4,
+        right: 4,
+    },
+    controls: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    seekWrapper: {
+        marginTop: 24,
+        flexDirection: 'row',
+        justifyContent: 'center',
+    },
+    seek: {
+        paddingVertical: 4,
+        paddingHorizontal: 8,
+        borderRadius: 2,
+        borderWidth: 1,
+        borderColor: '#5E5E66',
+    },
+    seekText: {
+        fontSize: 16,
+        color: '#8D8E99',
+        fontWeight: '700',
+    },
+    progress: {
+        marginTop: 12,
+        flex: 1,
+        flexDirection: 'row',
+        borderRadius: 3,
+        overflow: 'hidden',
+    },
+    innerProgressCompleted: {
+        height: 20,
+        backgroundColor: '#cccccc',
+    },
+    innerProgressRemaining: {
+        height: 20,
+        backgroundColor: '#2C2C2C',
     },
 });
-
-const TRACKS = [
-    {
-        title: "Stressed Out",
-        artist: "Twenty One Pilots",
-        albumArtUrl: "http://36.media.tumblr.com/14e9a12cd4dca7a3c3c4fe178b607d27/tumblr_nlott6SmIh1ta3rfmo1_1280.jpg",
-        audioUrl: "http://dl.fazmusics.in/Ali/music/aban/hot%20100%20.7%20nov%202015(128)/Twenty%20One%20Pilots%20-%20Stressed%20Out.mp3",
-    },
-    {
-        title: "Love Yourself",
-        artist: "Justin Bieber",
-        albumArtUrl: "http://arrestedmotion.com/wp-content/uploads/2015/10/JB_Purpose-digital-deluxe-album-cover_lr.jpg",
-        audioUrl:
-            "http://srv2.dnupload.com/Music/Album/Justin%20Bieber%20-%20Purpose%20(Deluxe%20Version)%20(320)/Justin%20Bieber%20-%20Purpose%20(Deluxe%20Version)%20128/05%20Love%20Yourself.mp3",
-    },
-    {
-        title: "Hotline Bling",
-        artist: "Drake",
-        albumArtUrl: "https://upload.wikimedia.org/wikipedia/commons/c/c9/Drake_-_Hotline_Bling.png",
-        audioUrl:
-            "http://dl2.shirazsong.org/dl/music/94-10/CD%201%20-%20Best%20of%202015%20-%20Top%20Downloads/03.%20Drake%20-%20Hotline%20Bling%20.mp3",
-    },
-];
 
 export default Player;

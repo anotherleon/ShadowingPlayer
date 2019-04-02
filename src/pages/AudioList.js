@@ -1,37 +1,34 @@
-import React from "react";
-import { StyleSheet, ScrollView, View, Text, Image,TouchableOpacity } from "react-native";
-import Icon from "../assets/Icon";
+import React from 'react';
+import { StyleSheet, View } from 'react-native';
+import AudioList from './components/AudioList';
 // import { TouchableHighlight, TouchableOpacity } from "react-native-gesture-handler";
 
-class AudioList extends React.Component {
+class AudioListPage extends React.Component {
     static navigationOptions = ({ navigation }) => {
         return {
-            title: navigation.getParam("dirName", "音频文件"),
+            title: navigation.getParam('dirName', '音频文件'),
             headerStyle: {
-                backgroundColor: "#0099CC",
+                backgroundColor: '#0099CC',
             },
-            headerTintColor: "#fff",
+            headerTintColor: '#fff',
             headerLeftContainerStyle: { marginLeft: 16 },
         };
     };
+    handlePress = (filePath, fileList) => {
+        this.props.navigation.push('Player', {
+            filePath,
+            fileList,
+        });
+    };
     render() {
         const { navigation } = this.props;
-        const fileList = navigation.getParam("fileList", []);
+        const fileList = navigation.getParam('fileList', []);
         return (
-            <ScrollView style={{ paddingTop: 8 }}>
-                {fileList.map((item, index) => (
-                    <TouchableOpacity 
-                    onPress={() =>
-                        this.props.navigation.push("PlayerBasic", { // PlayerBasic PlayerFullScreen
-                            filePath: item.filePath
-                        })
-                    }
-                    style={styles.listItemWrapper} key={index}>
-                        <Image source={{ uri: Icon.audio }} style={{ width: 44, height: 44, marginRight: 8 }} />
-                        <Text>{item.name}</Text>
-                    </TouchableOpacity>
-                ))}
-            </ScrollView>
+            <View style={styles.container}>
+                <View style={{ height: 8 }} />
+                <AudioList fileList={fileList} onPress={this.handlePress} />
+                <View style={{ height: 16, backgroundColor: 'transparent' }} />
+            </View>
         );
     }
 }
@@ -39,15 +36,8 @@ class AudioList extends React.Component {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-    },
-    listItemWrapper: {
-        flexDirection: "row",
-        alignItems: "center",
-        paddingHorizontal: 16,
-        paddingVertical: 8,
-        borderBottomWidth: StyleSheet.hairlineWidth,
-        borderColor: "#EDEDF0",
+        backgroundColor: '#f5f5f5',
     },
 });
 
-export default AudioList;
+export default AudioListPage;

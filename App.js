@@ -1,23 +1,19 @@
-import React from "react";
 import Home from "./src/pages/Home";
-import FolderList from "./src/pages/FolderList";
 import AudioList from "./src/pages/AudioList";
-import PlayerFullScreen from "./src/pages/PlayerFullScreen";
+import Player from "./src/pages/Player";
 import PlayerBasic from "./src/pages/PlayerBasic";
 import { createStackNavigator, createAppContainer } from "react-navigation";
 
 const AppNavigator = createStackNavigator(
     {
-        Home: Home,
-        FolderList,
+        Home,
         AudioList,
-        PlayerFullScreen,
+        Player,
         PlayerBasic,
     },
     {
-        initialRouteName: "FolderList",
+        initialRouteName: "Home",
     },
 );
 
 export default createAppContainer(AppNavigator);
-// export default App;

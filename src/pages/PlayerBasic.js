@@ -1,27 +1,35 @@
-import React, { Component } from "react";
-import { AlertIOS, Platform, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import Video, { FilterType } from "react-native-video";
+import React, { Component } from 'react';
+import { AlertIOS, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import Video, { FilterType } from 'react-native-video';
 
-const filterTypes = [
-    FilterType.NONE,
-    FilterType.INVERT,
-    FilterType.MONOCHROME,
-    FilterType.POSTERIZE,
-    FilterType.FALSE,
-    FilterType.MAXIMUMCOMPONENT,
-    FilterType.MINIMUMCOMPONENT,
-    FilterType.CHROME,
-    FilterType.FADE,
-    FilterType.INSTANT,
-    FilterType.MONO,
-    FilterType.NOIR,
-    FilterType.PROCESS,
-    FilterType.TONAL,
-    FilterType.TRANSFER,
-    FilterType.SEPIA,
-];
+// const filterTypes = [
+//     FilterType.NONE,
+//     FilterType.INVERT,
+//     FilterType.MONOCHROME,
+//     FilterType.POSTERIZE,
+//     FilterType.FALSE,
+//     FilterType.MAXIMUMCOMPONENT,
+//     FilterType.MINIMUMCOMPONENT,
+//     FilterType.CHROME,
+//     FilterType.FADE,
+//     FilterType.INSTANT,
+//     FilterType.MONO,
+//     FilterType.NOIR,
+//     FilterType.PROCESS,
+//     FilterType.TONAL,
+//     FilterType.TRANSFER,
+//     FilterType.SEPIA,
+// ];
 
 class VideoPlayer extends Component {
+    static navigationOptions = {
+        title: 'Audio',
+        headerStyle: {
+            backgroundColor: '#0099CC',
+        },
+        headerTintColor: '#fff',
+        headerBackTitle: null,
+    };
     constructor(props) {
         super(props);
         this.onLoad = this.onLoad.bind(this);
@@ -32,20 +40,20 @@ class VideoPlayer extends Component {
         rate: 1,
         volume: 1,
         muted: false,
-        resizeMode: "contain",
+        resizeMode: 'contain',
         duration: 0.0,
         currentTime: 0.0,
         controls: false,
         paused: true,
-        skin: "custom",
+        skin: 'custom',
         ignoreSilentSwitch: null,
         isBuffering: false,
-        filter: FilterType.NONE,
-        filterEnabled: true,
+        // filter: FilterType.NONE,
+        // filterEnabled: true,
     };
 
     onLoad(data) {
-        console.log("On load fired!");
+        console.log('On load fired!');
         this.setState({ duration: data.duration });
     }
 
@@ -65,23 +73,23 @@ class VideoPlayer extends Component {
         }
     }
 
-    setFilter(step) {
-        let index = filterTypes.indexOf(this.state.filter) + step;
+    // setFilter(step) {
+    //     let index = filterTypes.indexOf(this.state.filter) + step;
 
-        if (index === filterTypes.length) {
-            index = 0;
-        } else if (index === -1) {
-            index = filterTypes.length - 1;
-        }
+    //     if (index === filterTypes.length) {
+    //         index = 0;
+    //     } else if (index === -1) {
+    //         index = filterTypes.length - 1;
+    //     }
 
-        this.setState({
-            filter: filterTypes[index],
-        });
-    }
+    //     this.setState({
+    //         filter: filterTypes[index],
+    //     });
+    // }
 
     renderSkinControl(skin) {
         const isSelected = this.state.skin == skin;
-        const selectControls = skin == "native" || skin == "embed";
+        const selectControls = skin == 'native' || skin == 'embed';
         return (
             <TouchableOpacity
                 onPress={() => {
@@ -91,7 +99,7 @@ class VideoPlayer extends Component {
                     });
                 }}
             >
-                <Text style={[styles.controlOption, { fontWeight: isSelected ? "bold" : "normal" }]}>{skin}</Text>
+                <Text style={[styles.controlOption, { fontWeight: isSelected ? 'bold' : 'normal' }]}>{skin}</Text>
             </TouchableOpacity>
         );
     }
@@ -105,7 +113,7 @@ class VideoPlayer extends Component {
                     this.setState({ rate: rate });
                 }}
             >
-                <Text style={[styles.controlOption, { fontWeight: isSelected ? "bold" : "normal" }]}>{rate}x</Text>
+                <Text style={[styles.controlOption, { fontWeight: isSelected ? 'bold' : 'normal' }]}>{rate}x</Text>
             </TouchableOpacity>
         );
     }
@@ -119,7 +127,7 @@ class VideoPlayer extends Component {
                     this.setState({ resizeMode: resizeMode });
                 }}
             >
-                <Text style={[styles.controlOption, { fontWeight: isSelected ? "bold" : "normal" }]}>{resizeMode}</Text>
+                <Text style={[styles.controlOption, { fontWeight: isSelected ? 'bold' : 'normal' }]}>{resizeMode}</Text>
             </TouchableOpacity>
         );
     }
@@ -133,7 +141,7 @@ class VideoPlayer extends Component {
                     this.setState({ volume: volume });
                 }}
             >
-                <Text style={[styles.controlOption, { fontWeight: isSelected ? "bold" : "normal" }]}>{volume * 100}%</Text>
+                <Text style={[styles.controlOption, { fontWeight: isSelected ? 'bold' : 'normal' }]}>{volume * 100}%</Text>
             </TouchableOpacity>
         );
     }
@@ -147,7 +155,7 @@ class VideoPlayer extends Component {
                     this.setState({ ignoreSilentSwitch: ignoreSilentSwitch });
                 }}
             >
-                <Text style={[styles.controlOption, { fontWeight: isSelected ? "bold" : "normal" }]}>{ignoreSilentSwitch}</Text>
+                <Text style={[styles.controlOption, { fontWeight: isSelected ? 'bold' : 'normal' }]}>{ignoreSilentSwitch}</Text>
             </TouchableOpacity>
         );
     }
@@ -166,12 +174,8 @@ class VideoPlayer extends Component {
                 >
                     <Video
                         audioOnly={true}
-                        // source={require("../assets/broadchurch.mp4")}
-                        // source={{
-                        //     uri:"https://m701.music.126.net/20190325161021/f235e93fa6acc80da7a920bcb5b14585/jdyyaac/5352/0708/0552/d820bb56690b520b21ad28791637662d.m4a"
-                        // }}
-                        // source={require("../assets/city_of_star.m4a")}
-                        source={{ uri: "file://" + filePath }}
+                        source={require('../assets/city_of_star.m4a')}
+                        // source={{ uri: 'file://' + filePath }}
                         style={styles.fullScreen}
                         rate={this.state.rate}
                         // paused={this.state.paused}
@@ -193,12 +197,12 @@ class VideoPlayer extends Component {
 
                 <View style={styles.controls}>
                     <View style={styles.generalControls}>
-                        <View style={styles.skinControl}>
-                            {this.renderSkinControl("custom")}
-                            {this.renderSkinControl("native")}
-                            {this.renderSkinControl("embed")}
-                        </View>
-                        {this.state.filterEnabled ? (
+                        {/* <View style={styles.skinControl}>
+                            {this.renderSkinControl('custom')}
+                            {this.renderSkinControl('native')}
+                            {this.renderSkinControl('embed')}
+                        </View> */}
+                        {/* {this.state.filterEnabled ? (
                             <View style={styles.skinControl}>
                                 <TouchableOpacity
                                     onPress={() => {
@@ -215,7 +219,7 @@ class VideoPlayer extends Component {
                                     <Text style={styles.controlOption}>Next Filter</Text>
                                 </TouchableOpacity>
                             </View>
-                        ) : null}
+                        ) : null} */}
                     </View>
                     <View style={styles.generalControls}>
                         <View style={styles.rateControl}>
@@ -230,20 +234,20 @@ class VideoPlayer extends Component {
                             {this.renderVolumeControl(1.5)}
                         </View>
 
-                        <View style={styles.resizeModeControl}>
-                            {this.renderResizeModeControl("cover")}
-                            {this.renderResizeModeControl("contain")}
-                            {this.renderResizeModeControl("stretch")}
-                        </View>
+                        {/* <View style={styles.resizeModeControl}>
+                            {this.renderResizeModeControl('cover')}
+                            {this.renderResizeModeControl('contain')}
+                            {this.renderResizeModeControl('stretch')}
+                        </View> */}
                     </View>
-                    <View style={styles.generalControls}>
-                        {Platform.OS === "ios" ? (
+                    {/* <View style={styles.generalControls}>
+                        {Platform.OS === 'ios' ? (
                             <View style={styles.ignoreSilentSwitchControl}>
-                                {this.renderIgnoreSilentSwitchControl("ignore")}
-                                {this.renderIgnoreSilentSwitchControl("obey")}
+                                {this.renderIgnoreSilentSwitchControl('ignore')}
+                                {this.renderIgnoreSilentSwitchControl('obey')}
                             </View>
                         ) : null}
-                    </View>
+                    </View> */}
 
                     <View style={styles.trackingControls}>
                         <View style={styles.progress}>
@@ -257,13 +261,13 @@ class VideoPlayer extends Component {
     }
 
     renderNativeSkin(filePath) {
-        const videoStyle = this.state.skin == "embed" ? styles.nativeVideoControls : styles.fullScreen;
+        const videoStyle = this.state.skin == 'embed' ? styles.nativeVideoControls : styles.fullScreen;
         return (
             <View style={styles.container}>
                 <View style={styles.fullScreen}>
                     <Video
                         // source={require("../assets/city_of_star.m4a")}
-                        source={{ uri: "file://" + filePath }}
+                        source={{ uri: 'file://' + filePath }}
                         style={videoStyle}
                         rate={this.state.rate}
                         paused={this.state.paused}
@@ -286,9 +290,9 @@ class VideoPlayer extends Component {
                 <View style={styles.controls}>
                     <View style={styles.generalControls}>
                         <View style={styles.skinControl}>
-                            {this.renderSkinControl("custom")}
-                            {this.renderSkinControl("native")}
-                            {this.renderSkinControl("embed")}
+                            {this.renderSkinControl('custom')}
+                            {this.renderSkinControl('native')}
+                            {this.renderSkinControl('embed')}
                         </View>
                         {this.state.filterEnabled ? (
                             <View style={styles.skinControl}>
@@ -323,16 +327,16 @@ class VideoPlayer extends Component {
                         </View>
 
                         <View style={styles.resizeModeControl}>
-                            {this.renderResizeModeControl("cover")}
-                            {this.renderResizeModeControl("contain")}
-                            {this.renderResizeModeControl("stretch")}
+                            {this.renderResizeModeControl('cover')}
+                            {this.renderResizeModeControl('contain')}
+                            {this.renderResizeModeControl('stretch')}
                         </View>
                     </View>
                     <View style={styles.generalControls}>
-                        {Platform.OS === "ios" ? (
+                        {Platform.OS === 'ios' ? (
                             <View style={styles.ignoreSilentSwitchControl}>
-                                {this.renderIgnoreSilentSwitchControl("ignore")}
-                                {this.renderIgnoreSilentSwitchControl("obey")}
+                                {this.renderIgnoreSilentSwitchControl('ignore')}
+                                {this.renderIgnoreSilentSwitchControl('obey')}
                             </View>
                         ) : null}
                     </View>
@@ -343,8 +347,7 @@ class VideoPlayer extends Component {
 
     render() {
         const { navigation } = this.props;
-        const filePath = navigation.getParam("filePath");
-        // AlertIOS.alert(filePath);
+        const filePath = navigation.getParam('filePath');
         return this.state.controls ? this.renderNativeSkin(filePath) : this.renderCustomSkin(filePath);
     }
 }
@@ -353,9 +356,9 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         // width: 375,
-        justifyContent: "center",
-        alignItems: "center",
-        backgroundColor: "black",
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'black',
     },
     fullScreen: {
         // position: "absolute",
@@ -367,64 +370,64 @@ const styles = StyleSheet.create({
         height: 400,
     },
     controls: {
-        backgroundColor: "transparent",
+        backgroundColor: 'transparent',
         borderRadius: 5,
-        position: "absolute",
+        position: 'absolute',
         bottom: 44,
         left: 4,
         right: 4,
     },
     progress: {
         flex: 1,
-        flexDirection: "row",
+        flexDirection: 'row',
         borderRadius: 3,
-        overflow: "hidden",
+        overflow: 'hidden',
     },
     innerProgressCompleted: {
         height: 20,
-        backgroundColor: "#cccccc",
+        backgroundColor: '#cccccc',
     },
     innerProgressRemaining: {
         height: 20,
-        backgroundColor: "#2C2C2C",
+        backgroundColor: '#2C2C2C',
     },
     generalControls: {
         flex: 1,
-        flexDirection: "row",
-        overflow: "hidden",
+        flexDirection: 'row',
+        overflow: 'hidden',
         paddingBottom: 10,
     },
     skinControl: {
         flex: 1,
-        flexDirection: "row",
-        justifyContent: "center",
+        flexDirection: 'row',
+        justifyContent: 'center',
     },
     rateControl: {
         flex: 1,
-        flexDirection: "row",
-        justifyContent: "center",
+        flexDirection: 'row',
+        justifyContent: 'center',
     },
     volumeControl: {
         flex: 1,
-        flexDirection: "row",
-        justifyContent: "center",
+        flexDirection: 'row',
+        justifyContent: 'center',
     },
     resizeModeControl: {
         flex: 1,
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "center",
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     ignoreSilentSwitchControl: {
         flex: 1,
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "center",
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     controlOption: {
-        alignSelf: "center",
+        alignSelf: 'center',
         fontSize: 11,
-        color: "white",
+        color: 'white',
         paddingLeft: 2,
         paddingRight: 2,
         lineHeight: 12,
