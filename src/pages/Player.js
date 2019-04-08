@@ -1,40 +1,67 @@
 import React from 'react';
-import { Dimensions, StyleSheet, View, ImageBackground, Text, TouchableOpacity, Button } from 'react-native';
+import {
+    Dimensions,
+    StyleSheet,
+    View,
+    ScrollView,
+    Image,
+    ImageBackground,
+    Text,
+    TouchableOpacity,
+    TouchableWithoutFeedback,
+} from 'react-native';
 import TouchableImage from './components/TouchableImage';
-import Video from 'react-native-video';
+import AudioPlayer from './components/AudioPlayer';
 import Icon from '../assets/Icon';
-import AudioList from './components/AudioList';
+import { second2ms } from '../utils/formatDate';
 
-const SCREEN_WIDTH = Dimensions.get('window').width;
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+
 class Player extends React.Component {
-    static navigationOptions = {
-        title: 'Audio Plyer',
-        headerStyle: {
-            backgroundColor: '#0099CC',
-        },
-        headerTintColor: '#fff',
-        headerBackTitle: null,
+    static navigationOptions = ({ navigation }) => {
+        return {
+            headerTitle: navigation.getParam('fileName', '播放器'),
+            headerStyle: {
+                backgroundColor: '#0099CC',
+            },
+            headerTintColor: '#fff',
+            headerBackTitle: '',
+        };
     };
     state = {
         filePath: '',
-        fileList: [],
+        fileList: [1, 2],
         paused: false,
-        duration: 0.0,
+        duration: Infinity,
         currentTime: 0.0,
         rate: 1,
         volume: 1,
         muted: false,
         repeat: false,
-        mode: 'repeat', // repeat random
+        mode: 'repeat', // repeatOnce random
+        modeDesc: '列表循环',
+        currentIndex: 0,
+        isShowQueue: false,
     };
     componentWillMount() {
         const { navigation } = this.props;
         const filePath = navigation.getParam('filePath');
         const fileList = navigation.getParam('fileList') || [];
+        let currentIndex = fileList.findIndex(item => item.filePath === filePath);
         this.setState({
             filePath,
             fileList,
+            currentIndex,
         });
+        // console.log('new Video======', new Video())
+        if (AudioPlayer.instance) {
+            AudioPlayer.setProps({
+                fileList,
+                onProgress: this.handleProgress,
+                onLoad: this.handleLoad,
+            });
+            AudioPlayer.setFilePath(filePath, currentIndex);
+        }
     }
     handleLoad = data => {
         this.setState({ duration: Math.floor(data.duration) });
@@ -50,153 +77,240 @@ class Player extends React.Component {
         }
     }
     handlePlay = () => {
-        if (this.state.paused && Math.floor(this.state.currentTime) === this.state.duration) {
-            this.player.seek(0);
-        }
         this.setState({
             paused: !this.state.paused,
         });
+        AudioPlayer.play();
     };
     handleSeek = second => {
-        this.player.seek(this.state.currentTime + second);
+        AudioPlayer.seek(this.state.currentTime + second);
     };
 
-    handleNext = next => {
-        let i = this.state.fileList.findIndex(item => item.filePath === this.state.filePath);
-        console.log(i);
+    __next = next => {
+        const { fileList, mode } = this.state;
+        let i = this.state.currentIndex; // fileList.findIndex(item => item.filePath === this.state.filePath);
         if (i < 0) {
             return;
         }
-        const len = this.state.fileList.length;
-        const mode = this.state.mode;
+        const len = fileList.length;
         if (mode === 'repeat' || mode === 'repeatOnce') {
-            if (i + next < 0 || i + next >= len) {
+            if (i + next < 0 || i + next > len) {
+                this.setState({ paused: true });
                 return;
             }
-            this.setState({
-                filePath: this.state.fileList[i + next].filePath,
-            });
+            if (i + next === len) {
+                i = -1;
+            }
+            const currentIndex = i + next;
+            const filePath = fileList[currentIndex].filePath;
+            this.setState({ filePath, currentIndex });
+            AudioPlayer.setFilePath(filePath, currentIndex);
+            const fileName = fileList[currentIndex].name;
+            this.props.navigation.setParams({ fileName });
         } else if (mode === 'random') {
-            const r = Math.floor(Math.random() * len);
-            this.setState({
-                filePath: next === 1 ? this.state.fileList[r] : this.state.fileList[i + next],
-            });
+            if (i + next < 0 && next === -1) {
+                this.setState({ paused: true });
+                return;
+            }
+            if (i + next === len) {
+                i = -1;
+            }
+            let r = Math.floor(Math.random() * len);
+            // 如果随机数还是当前的，就循环获取，直到不同
+            while (r === i && len !== 1) {
+                r = Math.floor(Math.random() * len);
+            }
+            const currentIndex = next === 1 ? r : i + next;
+            const filePath = fileList[currentIndex].filePath;
+            this.setState({ filePath, currentIndex });
+            AudioPlayer.setFilePath(filePath, currentIndex);
+
+            const fileName = fileList[currentIndex].name;
+            this.props.navigation.setParams({ fileName });
         }
     };
 
+    handleNext = () => {
+        // AudioPlayer.next();
+        this.__next(1);
+    };
+
+    handlePrev = () => {
+        // AudioPlayer.prev();
+        this.__next(-1);
+    };
+
     handleMode = () => {
-        const mode = this.state.mode;
+        const { mode, fileList } = this.state;
         if (mode === 'repeat') {
             this.setState({
                 mode: 'random',
-                repeat: false,
+                modeDesc: '随机播放',
+                repeat: fileList.length === 1 ? true : false,
             });
+            AudioPlayer.setRepeat(false);
         } else if (mode === 'random') {
             this.setState({
                 mode: 'repeatOnce',
-                repeat: true,
+                modeDesc: '单曲循环',
+                repeat: true, // 只有在单曲循环时才重复播放
             });
+            AudioPlayer.setRepeat(true);
         } else if (mode === 'repeatOnce') {
             this.setState({
                 mode: 'repeat',
+                modeDesc: '列表循环',
                 repeat: false,
             });
+            AudioPlayer.setRepeat(false);
         }
     };
 
     handleProgressPress = e => {
         const pageX = e.nativeEvent.pageX;
-        const seekTime = Math.floor(((pageX - 4) / (SCREEN_WIDTH - 8)) * this.state.duration);
-        !!seekTime && this.player.seek(seekTime);
+        const seekTime = Math.floor(((pageX - 64) / (SCREEN_WIDTH - 64 * 2)) * this.state.duration);
+        !!seekTime && AudioPlayer.seek(seekTime);
     };
 
     handleEnd = () => {
-        this.setState({
-            paused: true,
-        });
+        if (this.state.mode === 'repeatOnce') {
+            return;
+        }
+        this.handleNext(1);
+        // this.setState({
+        //     paused: true,
+        // });
     };
+
+    handleQueue = () => {
+        this.setState({ isShowQueue: true });
+    };
+
+    handleAudioBecomingNoisy = () => {
+        this.setState({ paused: true });
+    };
+
     render() {
         const flexCompleted = this.getCurrentTimePercentage() * 100;
         const flexRemaining = (1 - this.getCurrentTimePercentage()) * 100;
-
         return (
             <View style={styles.container}>
-                {/* <TouchableImage src={Icon.front} size={375} /> */}
+                {!AudioPlayer.instance && (
+                    <AudioPlayer fileList={this.state.fileList} filePath={this.state.filePath} onLoad={this.handleLoad} />
+                )}
                 <ImageBackground source={require('../assets/backgroud.png')} style={{ flex: 1 }}>
-                    {/* <AudioList fileList={this.state.fileList} /> */}
-                    <Video
-                        ref={ref => (this.player = ref)}
-                        audioOnly={true}
-                        // source={require('../assets/city_of_star.m4a')}
-                        source={{ uri: 'file://' + this.state.filePath }}
-                        paused={this.state.paused}
-                        volume={this.state.volume}
-                        muted={this.state.muted}
-                        repeat={this.state.repeat}
-                        rate={this.state.rate}
-                        playInBackground={true}
-                        // onLoadStart={this.loadStart} // Callback when video starts to load
-                        onLoad={this.handleLoad} // Callback when video loads
-                        onProgress={this.handleProgress} // Callback every ~250ms with currentTime
-                        onEnd={this.handleEnd} // Callback when playback finishes
-                        // onError={this.videoError} // Callback when video cannot be loaded
-                        style={styles.audio}
-                    />
-
                     <View style={styles.controlWrapper}>
-                        <Button
-                            title={this.state.mode}
-                            onPress={() => {
-                                this.handleMode();
-                            }}
-                        />
-
-                        <View style={styles.controls}>
-                            <TouchableImage
-                                src={Icon.prev}
-                                size={36}
-                                onPress={() => {
-                                    this.handleNext(-1);
-                                }}
-                            />
-                            <View style={{ marginHorizontal: 16 }}>
-                                <TouchableImage src={this.state.paused ? Icon.play : Icon.pause} size={48} onPress={this.handlePlay} />
-                            </View>
-                            <TouchableImage
-                                src={Icon.next}
-                                size={36}
-                                onPress={() => {
-                                    this.handleNext(1);
-                                }}
-                            />
-                        </View>
                         <View style={styles.seekWrapper}>
                             <TouchableOpacity
+                                style={styles.seek}
                                 onPress={() => {
                                     this.handleSeek(-10);
                                 }}
                             >
-                                <View style={styles.seek}>
-                                    <Text style={styles.seekText}>-10S</Text>
-                                </View>
+                                <Text style={styles.seekText}>-10S</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
-                                style={{ marginLeft: 48 }}
+                                style={[styles.seek, { marginLeft: 48 }]}
                                 onPress={() => {
                                     this.handleSeek(10);
                                 }}
                             >
-                                <View style={styles.seek}>
-                                    <Text style={styles.seekText}>+10S</Text>
-                                </View>
+                                <Text style={styles.seekText}>+10S</Text>
                             </TouchableOpacity>
                         </View>
-                        <TouchableOpacity activeOpacity={1} style={styles.progress} onPress={this.handleProgressPress}>
-                            <View style={[styles.innerProgressCompleted, { flex: flexCompleted }]} />
-                            <View style={[styles.innerProgressRemaining, { flex: flexRemaining }]} />
-                        </TouchableOpacity>
+                        {/* 进度条 */}
+                        <View style={{ marginTop: 12, flexDirection: 'row', alignItems: 'center' }}>
+                            <Text style={{ color: '#fff', position: 'absolute', zIndex: 1 }}>{second2ms(this.state.currentTime)}</Text>
+                            <TouchableOpacity activeOpacity={1} style={styles.progress} onPress={this.handleProgressPress}>
+                                <View style={[styles.innerProgressCompleted, { flex: flexCompleted }]} />
+                                <View style={[styles.innerProgressRemaining, { flex: flexRemaining }]} />
+                            </TouchableOpacity>
+                            <Text style={{ color: '#8D8E99', position: 'absolute', right: 0, zIndex: 1 }}>
+                                {second2ms(this.state.duration)}
+                            </Text>
+                        </View>
+                        <View style={styles.controls}>
+                            <TouchableImage src={Icon[this.state.mode]} size={28} onPress={this.handleMode} />
+                            <View style={{ marginHorizontal: 16, flexDirection: 'row' }}>
+                                <TouchableImage src={Icon.prev} size={36} onPress={this.handlePrev} />
+                                <View style={{ marginHorizontal: 28 }}>
+                                    <TouchableImage src={this.state.paused ? Icon.play : Icon.pause} size={48} onPress={this.handlePlay} />
+                                </View>
+                                <TouchableImage src={Icon.next} size={36} onPress={this.handleNext} />
+                            </View>
+                            <TouchableImage src={Icon.list} size={32} onPress={this.handleQueue} />
+                        </View>
                     </View>
                 </ImageBackground>
+                {/* 遮罩层 */}
+                {this.state.isShowQueue && (
+                    <TouchableWithoutFeedback
+                        onPress={() => {
+                            this.setState({ isShowQueue: false });
+                        }}
+                    >
+                        <View style={styles.musk} />
+                    </TouchableWithoutFeedback>
+                )}
+                {this.state.isShowQueue && (
+                    <View style={styles.queue}>
+                        <TouchableOpacity
+                            onPress={this.handleMode}
+                            activeOpacity={1}
+                            style={{
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                padding: 16,
+                                borderBottomWidth: StyleSheet.hairlineWidth,
+                                borderBottomColor: '#EDEDF0',
+                                borderTopLeftRadius: 8,
+                                borderTopRightRadius: 8,
+                                backgroundColor: '#fff',
+                            }}
+                        >
+                            <Image source={{ uri: Icon[this.state.mode + '_gray'] }} style={{ width: 24, height: 24, marginRight: 8 }} />
+                            <Text style={{ fontSize: 14, color: '#5E5E66' }}>{`${this.state.modeDesc}(${
+                                this.state.fileList.length
+                            })`}</Text>
+                        </TouchableOpacity>
+                        <ScrollView style={{ paddingBottom: 24, backgroundColor: '#fff' }}>
+                            {this.state.fileList.map((item, index) => (
+                                <TouchableOpacity
+                                    key={index}
+                                    style={{
+                                        flexDirection: 'row',
+                                        alignItems: 'center',
+                                        borderBottomWidth: StyleSheet.hairlineWidth,
+                                        borderBottomColor: '#EDEDF0',
+                                        paddingHorizontal: 16,
+                                    }}
+                                    onPress={() => {
+                                        this.setState({
+                                            filePath: item.filePath,
+                                            currentIndex: index,
+                                        });
+                                        console.log(this.state.currentIndex, index);
+                                        AudioPlayer.setFilePath(item.filePath);
+                                        this.props.navigation.setParams({ fileName: item.name });
+                                    }}
+                                >
+                                    {this.state.currentIndex === index && !this.state.paused && (
+                                        <Image source={{ uri: Icon.audioSpectrum }} style={{ width: 14, height: 14, marginRight: 8 }} />
+                                    )}
+                                    <Text
+                                        style={{
+                                            lineHeight: 44,
+                                            fontSize: 16,
+                                            color: this.state.currentIndex === index && !this.state.paused ? '#d81e06' : '#1B1C33',
+                                        }}
+                                    >
+                                        {item.name}
+                                    </Text>
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
+                    </View>
+                )}
             </View>
         );
     }
@@ -207,21 +321,17 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#000',
     },
-    audio: {
-        // height: 150,
-        // width: 300,
-        backgroundColor: '#fff',
-    },
     controlWrapper: {
-        borderRadius: 4,
+        // borderRadius: 4,
         position: 'absolute',
         bottom: 44,
-        left: 4,
-        right: 4,
+        left: 16,
+        right: 16,
     },
     controls: {
+        marginTop: 24,
         flexDirection: 'row',
-        justifyContent: 'center',
+        justifyContent: 'space-between',
         alignItems: 'center',
     },
     seekWrapper: {
@@ -230,22 +340,24 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     seek: {
-        paddingVertical: 4,
+        paddingVertical: 2,
         paddingHorizontal: 8,
         borderRadius: 2,
         borderWidth: 1,
         borderColor: '#5E5E66',
     },
     seekText: {
-        fontSize: 16,
+        fontSize: 12,
         color: '#8D8E99',
         fontWeight: '700',
     },
     progress: {
-        marginTop: 12,
+        marginHorizontal: 48,
         flex: 1,
         flexDirection: 'row',
-        borderRadius: 3,
+        borderRadius: 4,
+        borderColor: '#5E5E66',
+        borderWidth: StyleSheet.hairlineWidth,
         overflow: 'hidden',
     },
     innerProgressCompleted: {
@@ -255,6 +367,25 @@ const styles = StyleSheet.create({
     innerProgressRemaining: {
         height: 20,
         backgroundColor: '#2C2C2C',
+    },
+    queue: {
+        position: 'absolute',
+        zIndex: 2,
+        maxHeight: SCREEN_HEIGHT * 0.62,
+        bottom: 0,
+        left: 0,
+        right: 0,
+        // backgroundColor: '#fff',
+    },
+    musk: {
+        position: 'absolute',
+        zIndex: 1,
+        flex: 1,
+        top: 0,
+        bottom: 0,
+        left: 0,
+        right: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.2)',
     },
 });
 

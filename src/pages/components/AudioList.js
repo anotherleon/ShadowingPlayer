@@ -10,7 +10,7 @@ class AudioList extends React.Component {
                 {fileList.map((item, index) => (
                     <TouchableOpacity
                         onPress={() => {
-                            onPress(item.filePath, fileList);
+                            onPress(item.name, item.filePath, fileList);
                         }}
                         style={[
                             styles.listItemWrapper,

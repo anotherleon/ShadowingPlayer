@@ -1,5 +1,5 @@
 import Home from "./src/pages/Home";
-import AudioList from "./src/pages/AudioList";
+import AudioListPage from "./src/pages/AudioListPage";
 import Player from "./src/pages/Player";
 import PlayerBasic from "./src/pages/PlayerBasic";
 import { createStackNavigator, createAppContainer } from "react-navigation";
@@ -7,7 +7,7 @@ import { createStackNavigator, createAppContainer } from "react-navigation";
 const AppNavigator = createStackNavigator(
     {
         Home,
-        AudioList,
+        AudioListPage,
         Player,
         PlayerBasic,
     },

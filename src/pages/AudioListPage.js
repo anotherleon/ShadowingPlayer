@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import AudioList from './components/AudioList';
-// import { TouchableHighlight, TouchableOpacity } from "react-native-gesture-handler";
+import AudioCtroller from './components/AudioCtroller';
 
 class AudioListPage extends React.Component {
     static navigationOptions = ({ navigation }) => {
@@ -14,8 +14,9 @@ class AudioListPage extends React.Component {
             headerLeftContainerStyle: { marginLeft: 16 },
         };
     };
-    handlePress = (filePath, fileList) => {
+    handlePress = (fileName, filePath, fileList) => {
         this.props.navigation.push('Player', {
+            fileName,
             filePath,
             fileList,
         });
@@ -23,11 +24,13 @@ class AudioListPage extends React.Component {
     render() {
         const { navigation } = this.props;
         const fileList = navigation.getParam('fileList', []);
+        const isShowCtroller = navigation.getParam('isShowCtroller');
         return (
             <View style={styles.container}>
                 <View style={{ height: 8 }} />
                 <AudioList fileList={fileList} onPress={this.handlePress} />
                 <View style={{ height: 16, backgroundColor: 'transparent' }} />
+                {isShowCtroller && <AudioCtroller />}
             </View>
         );
     }

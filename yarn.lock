@@ -704,6 +704,10 @@
     "@types/istanbul-lib-coverage" "^1.1.0"
     "@types/yargs" "^12.0.9"
 
+"@react-native-community/async-storage@^1.2.4":
+  version "1.2.4"
+  resolved "http://registry.npm.souche-inc.com/@react-native-community/async-storage/download/@react-native-community/async-storage-1.2.4.tgz#34fb252ca296de95d9f8ea0ec106a9c349efdd5c"
+
 "@react-native-community/cli@^1.2.1":
   version "1.5.1"
   resolved "http://registry.npm.souche-inc.com/@react-native-community/cli/download/@react-native-community/cli-1.5.1.tgz#21a93266ecf1885990ac86680a369aa3ff432973"
