@@ -12,11 +12,14 @@ import {
 } from 'react-native';
 import TouchableImage from './components/TouchableImage';
 import AudioPlayer from './components/AudioPlayer';
+import PlayerStore from '../stores/PlayerStore';
 import Icon from '../assets/Icon';
 import { second2ms } from '../utils/formatDate';
+import { observer } from 'mobx-react';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
+@observer
 class Player extends React.Component {
     static navigationOptions = ({ navigation }) => {
         return {
@@ -48,20 +51,23 @@ class Player extends React.Component {
         const filePath = navigation.getParam('filePath');
         const fileList = navigation.getParam('fileList') || [];
         let currentIndex = fileList.findIndex(item => item.filePath === filePath);
-        this.setState({
-            filePath,
-            fileList,
-            currentIndex,
-        });
+        // this.setState({
+        //     filePath,
+        //     fileList,
+        //     currentIndex,
+        // });
+        PlayerStore.state.fileList = fileList;
+        PlayerStore.state.filePath = filePath;
+        PlayerStore.state.currentIndex = currentIndex;
         // console.log('new Video======', new Video())
-        if (AudioPlayer.instance) {
-            AudioPlayer.setProps({
-                fileList,
-                onProgress: this.handleProgress,
-                onLoad: this.handleLoad,
-            });
-            AudioPlayer.setFilePath(filePath, currentIndex);
-        }
+        // if (AudioPlayer.instance) {
+        //     AudioPlayer.setProps({
+        //         fileList,
+        //         onProgress: this.handleProgress,
+        //         onLoad: this.handleLoad,
+        //     });
+        //     AudioPlayer.setFilePath(filePath, currentIndex);
+        // }
     }
     handleLoad = data => {
         this.setState({ duration: Math.floor(data.duration) });
@@ -69,130 +75,51 @@ class Player extends React.Component {
     handleProgress = data => {
         this.setState({ currentTime: data.currentTime });
     };
-    getCurrentTimePercentage() {
-        if (this.state.currentTime > 0) {
-            return parseFloat(this.state.currentTime) / parseFloat(this.state.duration);
-        } else {
-            return 0;
-        }
-    }
+
     handlePlay = () => {
-        this.setState({
-            paused: !this.state.paused,
-        });
-        AudioPlayer.play();
+        PlayerStore.play();
     };
     handleSeek = second => {
-        AudioPlayer.seek(this.state.currentTime + second);
-    };
-
-    __next = next => {
-        const { fileList, mode } = this.state;
-        let i = this.state.currentIndex; // fileList.findIndex(item => item.filePath === this.state.filePath);
-        if (i < 0) {
-            return;
-        }
-        const len = fileList.length;
-        if (mode === 'repeat' || mode === 'repeatOnce') {
-            if (i + next < 0 || i + next > len) {
-                this.setState({ paused: true });
-                return;
-            }
-            if (i + next === len) {
-                i = -1;
-            }
-            const currentIndex = i + next;
-            const filePath = fileList[currentIndex].filePath;
-            this.setState({ filePath, currentIndex });
-            AudioPlayer.setFilePath(filePath, currentIndex);
-            const fileName = fileList[currentIndex].name;
-            this.props.navigation.setParams({ fileName });
-        } else if (mode === 'random') {
-            if (i + next < 0 && next === -1) {
-                this.setState({ paused: true });
-                return;
-            }
-            if (i + next === len) {
-                i = -1;
-            }
-            let r = Math.floor(Math.random() * len);
-            // 如果随机数还是当前的，就循环获取，直到不同
-            while (r === i && len !== 1) {
-                r = Math.floor(Math.random() * len);
-            }
-            const currentIndex = next === 1 ? r : i + next;
-            const filePath = fileList[currentIndex].filePath;
-            this.setState({ filePath, currentIndex });
-            AudioPlayer.setFilePath(filePath, currentIndex);
-
-            const fileName = fileList[currentIndex].name;
-            this.props.navigation.setParams({ fileName });
-        }
+        AudioPlayer.seek(PlayerStore.state.currentTime + second);
     };
 
     handleNext = () => {
-        // AudioPlayer.next();
-        this.__next(1);
+        PlayerStore.next(1);
+        this.setNavTitle(PlayerStore.state.fileName);
     };
 
     handlePrev = () => {
-        // AudioPlayer.prev();
-        this.__next(-1);
+        PlayerStore.next(-1);
+        this.setNavTitle(PlayerStore.state.fileName);
     };
 
     handleMode = () => {
-        const { mode, fileList } = this.state;
-        if (mode === 'repeat') {
-            this.setState({
-                mode: 'random',
-                modeDesc: '随机播放',
-                repeat: fileList.length === 1 ? true : false,
-            });
-            AudioPlayer.setRepeat(false);
-        } else if (mode === 'random') {
-            this.setState({
-                mode: 'repeatOnce',
-                modeDesc: '单曲循环',
-                repeat: true, // 只有在单曲循环时才重复播放
-            });
-            AudioPlayer.setRepeat(true);
-        } else if (mode === 'repeatOnce') {
-            this.setState({
-                mode: 'repeat',
-                modeDesc: '列表循环',
-                repeat: false,
-            });
-            AudioPlayer.setRepeat(false);
-        }
+        PlayerStore.handleMode();
     };
 
     handleProgressPress = e => {
         const pageX = e.nativeEvent.pageX;
-        const seekTime = Math.floor(((pageX - 64) / (SCREEN_WIDTH - 64 * 2)) * this.state.duration);
+        const seekTime = Math.floor(((pageX - 64) / (SCREEN_WIDTH - 64 * 2)) * PlayerStore.state.duration);
         !!seekTime && AudioPlayer.seek(seekTime);
-    };
-
-    handleEnd = () => {
-        if (this.state.mode === 'repeatOnce') {
-            return;
-        }
-        this.handleNext(1);
-        // this.setState({
-        //     paused: true,
-        // });
     };
 
     handleQueue = () => {
         this.setState({ isShowQueue: true });
     };
 
-    handleAudioBecomingNoisy = () => {
-        this.setState({ paused: true });
+    handleQueueItem = (item, index) => {
+        PlayerStore.handleQueueItem(item.filePath, index);
+        this.setNavTitle(item.name);
+    };
+
+    setNavTitle = title => {
+        this.props.navigation.setParams({ fileName: title });
     };
 
     render() {
-        const flexCompleted = this.getCurrentTimePercentage() * 100;
-        const flexRemaining = (1 - this.getCurrentTimePercentage()) * 100;
+        const { fileList, paused, mode, modeDesc, currentIndex, duration, currentTime } = PlayerStore.state;
+        const flexCompleted = getCurrentTimePercentage(currentTime, duration) * 100;
+        const flexRemaining = (1 - getCurrentTimePercentage(currentTime, duration)) * 100;
         return (
             <View style={styles.container}>
                 {!AudioPlayer.instance && (
@@ -200,6 +127,7 @@ class Player extends React.Component {
                 )}
                 <ImageBackground source={require('../assets/backgroud.png')} style={{ flex: 1 }}>
                     <View style={styles.controlWrapper}>
+                        {/* 播放控制：前进、后退 */}
                         <View style={styles.seekWrapper}>
                             <TouchableOpacity
                                 style={styles.seek}
@@ -220,21 +148,20 @@ class Player extends React.Component {
                         </View>
                         {/* 进度条 */}
                         <View style={{ marginTop: 12, flexDirection: 'row', alignItems: 'center' }}>
-                            <Text style={{ color: '#fff', position: 'absolute', zIndex: 1 }}>{second2ms(this.state.currentTime)}</Text>
+                            <Text style={{ color: '#fff', position: 'absolute', zIndex: 1 }}>{second2ms(currentTime)}</Text>
                             <TouchableOpacity activeOpacity={1} style={styles.progress} onPress={this.handleProgressPress}>
                                 <View style={[styles.innerProgressCompleted, { flex: flexCompleted }]} />
                                 <View style={[styles.innerProgressRemaining, { flex: flexRemaining }]} />
                             </TouchableOpacity>
-                            <Text style={{ color: '#8D8E99', position: 'absolute', right: 0, zIndex: 1 }}>
-                                {second2ms(this.state.duration)}
-                            </Text>
+                            <Text style={{ color: '#8D8E99', position: 'absolute', right: 0, zIndex: 1 }}>{second2ms(duration)}</Text>
                         </View>
+                        {/* 播放控制按钮 */}
                         <View style={styles.controls}>
-                            <TouchableImage src={Icon[this.state.mode]} size={28} onPress={this.handleMode} />
+                            <TouchableImage src={Icon[mode]} size={28} onPress={this.handleMode} />
                             <View style={{ marginHorizontal: 16, flexDirection: 'row' }}>
                                 <TouchableImage src={Icon.prev} size={36} onPress={this.handlePrev} />
                                 <View style={{ marginHorizontal: 28 }}>
-                                    <TouchableImage src={this.state.paused ? Icon.play : Icon.pause} size={48} onPress={this.handlePlay} />
+                                    <TouchableImage src={paused ? Icon.play : Icon.pause} size={48} onPress={this.handlePlay} />
                                 </View>
                                 <TouchableImage src={Icon.next} size={36} onPress={this.handleNext} />
                             </View>
@@ -252,58 +179,27 @@ class Player extends React.Component {
                         <View style={styles.musk} />
                     </TouchableWithoutFeedback>
                 )}
+                {/* 播放列表 */}
                 {this.state.isShowQueue && (
                     <View style={styles.queue}>
-                        <TouchableOpacity
-                            onPress={this.handleMode}
-                            activeOpacity={1}
-                            style={{
-                                flexDirection: 'row',
-                                alignItems: 'center',
-                                padding: 16,
-                                borderBottomWidth: StyleSheet.hairlineWidth,
-                                borderBottomColor: '#EDEDF0',
-                                borderTopLeftRadius: 8,
-                                borderTopRightRadius: 8,
-                                backgroundColor: '#fff',
-                            }}
-                        >
-                            <Image source={{ uri: Icon[this.state.mode + '_gray'] }} style={{ width: 24, height: 24, marginRight: 8 }} />
-                            <Text style={{ fontSize: 14, color: '#5E5E66' }}>{`${this.state.modeDesc}(${
-                                this.state.fileList.length
-                            })`}</Text>
+                        <TouchableOpacity onPress={this.handleMode} activeOpacity={1} style={styles.listTitle}>
+                            <Image source={{ uri: Icon[mode + '_gray'] }} style={{ width: 24, height: 24, marginRight: 8 }} />
+                            <Text style={{ fontSize: 14, color: '#5E5E66' }}>{`${modeDesc}(${fileList.length})`}</Text>
                         </TouchableOpacity>
+                        {/* 播放列表内容 */}
                         <ScrollView style={{ paddingBottom: 24, backgroundColor: '#fff' }}>
-                            {this.state.fileList.map((item, index) => (
+                            {fileList.map((item, index) => (
                                 <TouchableOpacity
                                     key={index}
-                                    style={{
-                                        flexDirection: 'row',
-                                        alignItems: 'center',
-                                        borderBottomWidth: StyleSheet.hairlineWidth,
-                                        borderBottomColor: '#EDEDF0',
-                                        paddingHorizontal: 16,
-                                    }}
+                                    style={styles.listItem}
                                     onPress={() => {
-                                        this.setState({
-                                            filePath: item.filePath,
-                                            currentIndex: index,
-                                        });
-                                        console.log(this.state.currentIndex, index);
-                                        AudioPlayer.setFilePath(item.filePath);
-                                        this.props.navigation.setParams({ fileName: item.name });
+                                        this.handleQueueItem(item, index);
                                     }}
                                 >
-                                    {this.state.currentIndex === index && !this.state.paused && (
+                                    {currentIndex === index && !paused && (
                                         <Image source={{ uri: Icon.audioSpectrum }} style={{ width: 14, height: 14, marginRight: 8 }} />
                                     )}
-                                    <Text
-                                        style={{
-                                            lineHeight: 44,
-                                            fontSize: 16,
-                                            color: this.state.currentIndex === index && !this.state.paused ? '#d81e06' : '#1B1C33',
-                                        }}
-                                    >
+                                    <Text style={[styles.listText, { color: currentIndex === index && !paused ? '#d81e06' : '#1B1C33' }]}>
                                         {item.name}
                                     </Text>
                                 </TouchableOpacity>
@@ -314,6 +210,13 @@ class Player extends React.Component {
             </View>
         );
     }
+}
+
+function getCurrentTimePercentage(currentTime, duration) {
+    if (currentTime > 0) {
+        return parseFloat(currentTime) / parseFloat(duration);
+    }
+    return 0;
 }
 
 const styles = StyleSheet.create({
@@ -376,6 +279,27 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         // backgroundColor: '#fff',
+    },
+    listTitle: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 16,
+        borderBottomWidth: StyleSheet.hairlineWidth,
+        borderBottomColor: '#EDEDF0',
+        borderTopLeftRadius: 8,
+        borderTopRightRadius: 8,
+        backgroundColor: '#fff',
+    },
+    listItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderBottomWidth: StyleSheet.hairlineWidth,
+        borderBottomColor: '#EDEDF0',
+        paddingHorizontal: 16,
+    },
+    listText: {
+        lineHeight: 44,
+        fontSize: 16,
     },
     musk: {
         position: 'absolute',

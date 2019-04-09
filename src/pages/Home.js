@@ -92,6 +92,7 @@ export default class Home extends React.Component {
                     <View style={{ height: 16, backgroundColor: 'transparent' }} />
                 </ScrollView>
                 <AudioPlayer />
+                <AudioCtroller />
                 {!!this.state.filePath && <AudioCtroller />}
             </SafeAreaView>
         );

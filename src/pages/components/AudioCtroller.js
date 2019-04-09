@@ -3,15 +3,27 @@ import { View, Text, Image } from 'react-native';
 import TouchableImage from './TouchableImage';
 import Icon from '../../assets/Icon';
 import AudioPlayer from './AudioPlayer';
+import PlayerStore from '../../stores/PlayerStore';
+import { observer } from 'mobx-react';
+import { TouchableOpacity } from 'react-native-gesture-handler';
 
-export default class AudioCtroller extends React.Component {
+@observer
+class AudioCtroller extends React.Component {
     state = {
         paused: true,
     };
-
+    // handlePress = (fileName, filePath, fileList) => {
+    //     this.props.navigation.push('Player', {
+    //         fileName,
+    //         filePath,
+    //         fileList,
+    //     });
+    // };
     render() {
         return (
-            <View
+            <TouchableOpacity
+                activeOpacity={1}
+                // onPress={this.handlePress}
                 style={{
                     position: 'absolute',
                     bottom: 0,
@@ -39,13 +51,10 @@ export default class AudioCtroller extends React.Component {
                     />
                     <View style={{ marginHorizontal: 4 }}>
                         <TouchableImage
-                            src={this.state.paused ? Icon.play : Icon.pause}
+                            src={PlayerStore.state.paused ? Icon.play : Icon.pause}
                             size={44}
                             onPress={() => {
-                                AudioPlayer.play();
-                                this.setState({
-                                    paused: !this.state.paused,
-                                });
+                                PlayerStore.play();
                             }}
                         />
                     </View>
@@ -57,7 +66,9 @@ export default class AudioCtroller extends React.Component {
                         }}
                     />
                 </View>
-            </View>
+            </TouchableOpacity>
         );
     }
 }
+
+export default AudioCtroller;

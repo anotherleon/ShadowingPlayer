@@ -30,7 +30,8 @@ class AudioListPage extends React.Component {
                 <View style={{ height: 8 }} />
                 <AudioList fileList={fileList} onPress={this.handlePress} />
                 <View style={{ height: 16, backgroundColor: 'transparent' }} />
-                {isShowCtroller && <AudioCtroller />}
+                {/* {isShowCtroller && <AudioCtroller />} */}
+                <AudioCtroller />
             </View>
         );
     }
