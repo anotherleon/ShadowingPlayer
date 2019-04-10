@@ -10,6 +10,9 @@ import {
     TouchableOpacity,
     TouchableWithoutFeedback,
 } from 'react-native';
+// import AsyncStorage from '@react-native-community/async-storage';
+import AsyncStorage from '../utils/AsyncStorage';
+
 import TouchableImage from './components/TouchableImage';
 import AudioPlayer from './components/AudioPlayer';
 import PlayerStore from '../stores/PlayerStore';
@@ -48,6 +51,7 @@ class Player extends React.Component {
     };
     componentWillMount() {
         const { navigation } = this.props;
+        const fileName = navigation.getParam('fileName', '播放器');
         const filePath = navigation.getParam('filePath');
         const fileList = navigation.getParam('fileList') || [];
         let currentIndex = fileList.findIndex(item => item.filePath === filePath);
@@ -56,9 +60,16 @@ class Player extends React.Component {
         //     fileList,
         //     currentIndex,
         // });
+
         PlayerStore.state.fileList = fileList;
         PlayerStore.state.filePath = filePath;
         PlayerStore.state.currentIndex = currentIndex;
+        this.handlePlay();
+
+        AsyncStorage.setItem('fileName', fileName);
+        AsyncStorage.setItem('filePath', filePath);
+        AsyncStorage.setItem('fileList', fileList);
+
         // console.log('new Video======', new Video())
         // if (AudioPlayer.instance) {
         //     AudioPlayer.setProps({
@@ -78,6 +89,9 @@ class Player extends React.Component {
 
     handlePlay = () => {
         PlayerStore.play();
+        if (!PlayerStore.state.currentTime && PlayerStore.state.seekTime) {
+            AudioPlayer.seek(PlayerStore.state.seekTime);
+        }
     };
     handleSeek = second => {
         AudioPlayer.seek(PlayerStore.state.currentTime + second);
@@ -97,10 +111,11 @@ class Player extends React.Component {
         PlayerStore.handleMode();
     };
 
-    handleProgressPress = e => {
+    handleProgressTouch = e => {
         const pageX = e.nativeEvent.pageX;
         const seekTime = Math.floor(((pageX - 64) / (SCREEN_WIDTH - 64 * 2)) * PlayerStore.state.duration);
-        !!seekTime && AudioPlayer.seek(seekTime);
+        PlayerStore.state.seekTime = seekTime;
+        // !!seekTime && AudioPlayer.seek(seekTime);
     };
 
     handleQueue = () => {
@@ -122,9 +137,6 @@ class Player extends React.Component {
         const flexRemaining = (1 - getCurrentTimePercentage(currentTime, duration)) * 100;
         return (
             <View style={styles.container}>
-                {!AudioPlayer.instance && (
-                    <AudioPlayer fileList={this.state.fileList} filePath={this.state.filePath} onLoad={this.handleLoad} />
-                )}
                 <ImageBackground source={require('../assets/backgroud.png')} style={{ flex: 1 }}>
                     <View style={styles.controlWrapper}>
                         {/* 播放控制：前进、后退 */}
@@ -149,7 +161,7 @@ class Player extends React.Component {
                         {/* 进度条 */}
                         <View style={{ marginTop: 12, flexDirection: 'row', alignItems: 'center' }}>
                             <Text style={{ color: '#fff', position: 'absolute', zIndex: 1 }}>{second2ms(currentTime)}</Text>
-                            <TouchableOpacity activeOpacity={1} style={styles.progress} onPress={this.handleProgressPress}>
+                            <TouchableOpacity activeOpacity={1} style={styles.progress} onPress={this.handleProgressTouch}>
                                 <View style={[styles.innerProgressCompleted, { flex: flexCompleted }]} />
                                 <View style={[styles.innerProgressRemaining, { flex: flexRemaining }]} />
                             </TouchableOpacity>
@@ -196,10 +208,10 @@ class Player extends React.Component {
                                         this.handleQueueItem(item, index);
                                     }}
                                 >
-                                    {currentIndex === index && !paused && (
+                                    {currentIndex === index && (
                                         <Image source={{ uri: Icon.audioSpectrum }} style={{ width: 14, height: 14, marginRight: 8 }} />
                                     )}
-                                    <Text style={[styles.listText, { color: currentIndex === index && !paused ? '#d81e06' : '#1B1C33' }]}>
+                                    <Text style={[styles.listText, { color: currentIndex === index ? '#d81e06' : '#1B1C33' }]}>
                                         {item.name}
                                     </Text>
                                 </TouchableOpacity>

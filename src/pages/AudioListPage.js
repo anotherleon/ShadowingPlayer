@@ -2,7 +2,9 @@ import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import AudioList from './components/AudioList';
 import AudioCtroller from './components/AudioCtroller';
-
+import PlayerStore from '../stores/PlayerStore';
+import { observer } from 'mobx-react';
+@observer
 class AudioListPage extends React.Component {
     static navigationOptions = ({ navigation }) => {
         return {
@@ -24,14 +26,23 @@ class AudioListPage extends React.Component {
     render() {
         const { navigation } = this.props;
         const fileList = navigation.getParam('fileList', []);
-        const isShowCtroller = navigation.getParam('isShowCtroller');
+        const { isShowController } = PlayerStore;
         return (
             <View style={styles.container}>
                 <View style={{ height: 8 }} />
                 <AudioList fileList={fileList} onPress={this.handlePress} />
-                <View style={{ height: 16, backgroundColor: 'transparent' }} />
-                {/* {isShowCtroller && <AudioCtroller />} */}
-                <AudioCtroller />
+                <View style={{ height: isShowController ? 64 : 16, backgroundColor: 'transparent' }} />
+                {isShowController && (
+                    <AudioCtroller
+                        onPress={() => {
+                            this.props.navigation.push('Player', {
+                                fileName: PlayerStore.state.fileName,
+                                filePath: PlayerStore.state.filePath,
+                                fileList: PlayerStore.state.fileList,
+                            });
+                        }}
+                    />
+                )}
             </View>
         );
     }

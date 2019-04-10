@@ -114,7 +114,7 @@ const fileWalker = async (path = RNFS.ExternalStorageDirectoryPath, dirName, cal
 };
 
 function isAudio(type) {
-    return ['mp3', 'mp4', 'wma', 'wav', 'm4a', 'plist'].includes(type);
+    return ['mp3', 'wma', 'wav', 'm4a', 'plist'].includes(type);
 }
 
 function getType(name) {
@@ -128,8 +128,10 @@ function getType(name) {
 // }
 
 function skipScan(name) {
-    const dirNameArr = ['Android', 'tencent', 'alipay', 'netease'];
-    if (dirNameArr.includes(name)) {
+    const dirNameArr = ['Android', 'System', 'log', 'tencent', 'alipay', 'netease', 'codoonsports', 'Youdao'].map(item =>
+        item.toLowerCase(),
+    );
+    if (dirNameArr.includes(name.toLowerCase())) {
         return true;
     }
     if (name.startsWith('com') || name.startsWith('.')) {

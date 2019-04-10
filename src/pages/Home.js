@@ -1,18 +1,19 @@
 import React from 'react';
 import { Platform, StyleSheet, ScrollView, View, Text, Image, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-navigation';
-import AsyncStorage from '@react-native-community/async-storage';
+import { observer } from 'mobx-react';
 
 import Icon from '../assets/Icon';
 import AudioCtroller from './components/AudioCtroller';
 import AudioPlayer from './components/AudioPlayer';
+import PlayerStore from '../stores/PlayerStore';
 
 import fileWalker from '../utils/fileWalker';
-var RNFS = require('react-native-fs');
+import AsyncStorage from '../utils/AsyncStorage';
 
-// global.audioPlayer = <AudioPlayer />;
-// console.log(global.audioPlayer)
-export default class Home extends React.Component {
+const RNFS = require('react-native-fs');
+@observer
+class Home extends React.Component {
     static navigationOptions = {
         title: '本地音频',
         headerStyle: {
@@ -22,7 +23,7 @@ export default class Home extends React.Component {
         headerBackTitle: null,
     };
     state = {
-        directory: [],
+        directory: {},
         scanPath: '',
         loading: true,
         filePath: '',
@@ -30,26 +31,51 @@ export default class Home extends React.Component {
 
     componentWillMount() {
         // RNFS.ExternalStorageDirectoryPath RNFS.MainBundlePath '/storage/emulated/0/00leon' RNFS.DocumentDirectoryPath '/Users/wangliang/Library'
-        fileWalker(Platform.OS === 'ios' ? RNFS.MainBundlePath : RNFS.ExternalStorageDirectoryPath, '/', this.getCurPath).then(res => {
+        fileWalker(Platform.OS === 'ios' ? RNFS.MainBundlePath : RNFS.ExternalStorageDirectoryPath, '/', this.showScanPath).then(res => {
             this.setState({
                 directory: { ...res },
                 loading: false,
             });
+            AsyncStorage.setItem('directory', res);
         });
 
-        AsyncStorage.getItem('filePatha')
-            .then(res => {
-                if (res) {
-                    AudioPlayer.setFilePath(res);
-                    this.setState({
-                        filePath: res,
-                    });
-                }
-            })
-            .catch(e => {});
+        AsyncStorage.getItem('directory').then(res => {
+            console.log('directory ==== \n', res);
+            this.setState({
+                directory: res,
+            });
+        });
+
+        AsyncStorage.getItem('fileName').then(res => {
+            console.log('fileName ==== \n', res);
+            PlayerStore.state.fileName = res;
+        });
+
+        AsyncStorage.getItem('filePath').then(res => {
+            console.log('filePath ==== \n', res);
+            PlayerStore.state.filePath = res;
+        });
+
+        AsyncStorage.getItem('fileList').then(res => {
+            console.log('fileList ==== \n', res);
+            PlayerStore.state.fileList = res;
+        });
+       
+        AsyncStorage.getItem('seekTime').then(res => {
+            console.log('seekTime ==== \n', res);
+            PlayerStore.state.seekTime = res;
+        });
+
     }
 
-    getCurPath = path => {
+    componentWillUnmount() {
+        PlayerStore.state.paused = true;
+        AsyncStorage.setItem('fileName', PlayerStore.state.fileName);
+        AsyncStorage.setItem('filePath', PlayerStore.state.filePath);
+        AsyncStorage.setItem('seekTime', PlayerStore.state.currentTime);
+    }
+
+    showScanPath = path => {
         this.setState({
             scanPath: path,
         });
@@ -58,11 +84,12 @@ export default class Home extends React.Component {
     render() {
         // console.log(this.props)
         const directory = Object.keys(this.state.directory);
+        const { isShowController } = PlayerStore;
         return (
             <SafeAreaView style={styles.container}>
                 <ScrollView>
                     {!this.state.loading && <View style={{ height: 8, backgroundColor: '#fff' }} />}
-                    {this.state.loading && (
+                    {this.state.loading && !directory.length && (
                         <View style={{ padding: 16, backgroundColor: '#fff' }}>
                             <Text>文件扫描中...</Text>
                             <Text>{this.state.scanPath}</Text>
@@ -74,7 +101,6 @@ export default class Home extends React.Component {
                                 this.props.navigation.push('AudioListPage', {
                                     dirName: this.state.directory[item][0].dirName,
                                     fileList: this.state.directory[item],
-                                    isShowCtroller: !!this.state.filePath,
                                 })
                             }
                             style={styles.listItemWrapper}
@@ -89,11 +115,20 @@ export default class Home extends React.Component {
                             </View>
                         </TouchableOpacity>
                     ))}
-                    <View style={{ height: 16, backgroundColor: 'transparent' }} />
+                    <View style={{ height: isShowController ? 64 : 16, backgroundColor: 'transparent' }} />
                 </ScrollView>
                 <AudioPlayer />
-                <AudioCtroller />
-                {!!this.state.filePath && <AudioCtroller />}
+                {isShowController && (
+                    <AudioCtroller
+                        onPress={() => {
+                            this.props.navigation.push('Player', {
+                                fileName: PlayerStore.state.fileName,
+                                filePath: PlayerStore.state.filePath,
+                                fileList: PlayerStore.state.fileList,
+                            });
+                        }}
+                    />
+                )}
             </SafeAreaView>
         );
     }
@@ -113,3 +148,5 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
     },
 });
+
+export default Home;

@@ -82,5 +82,6 @@ public class MainActivity extends ReactActivity {
 ```
 > https://reactnative.cn/docs/signed-apk-android/
 
-## Can Not Play mp3 file on android
+## Can Not Play mp3 file on android (Version 4.4.0)
+* 4.4.1 已修复
 https://github.com/react-native-community/react-native-video/pull/1529

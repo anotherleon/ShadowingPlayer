@@ -1,8 +1,9 @@
 import React from 'react';
 import Video from 'react-native-video';
-import AsyncStorage from '@react-native-community/async-storage';
+// import AsyncStorage from '@react-native-community/async-storage';
 import PlayerStore from '../../stores/PlayerStore';
 import { observer } from 'mobx-react';
+import { reaction } from 'mobx';
 @observer
 class AudioPlayer extends React.Component {
     static __instance = null;
@@ -17,12 +18,12 @@ class AudioPlayer extends React.Component {
             AudioPlayer.__instance = this;
         }
         // AudioPlayer.__instance = this;
-        // reaction(
-        //     () => PlayerStore.state.seekTime,
-        //     seekTime => {
-        //         this.__seek(seekTime);
-        //     },
-        // );
+        reaction(
+            () => PlayerStore.state.seekTime,
+            seekTime => {
+                this.__seek(seekTime);
+            },
+        );
     }
 
     // componentWillMount() {
@@ -63,14 +64,13 @@ class AudioPlayer extends React.Component {
         // const {  onLoad, onProgress, onEnd } = this.props;
         // const { onLoad, onProgress } = this.props;
         // console.log(this.props);
-        const { fielPath, paused, repeat } = PlayerStore.state;
-        console.log(paused);
+        const { filePath, paused, repeat } = PlayerStore.state;
         return (
             <Video
                 ref={ref => (this.player = ref)}
                 audioOnly={true}
-                source={require('../../assets/city_of_star.m4a')}
-                // source={{ uri: 'file://' + this.state.filePath}}
+                // source={require('../../assets/city_of_star.m4a')}
+                source={filePath ? { uri: 'file://' + filePath } : require('../../assets/city_of_star.m4a')}
                 paused={paused}
                 // volume={this.state.volume}
                 // muted={this.state.muted}

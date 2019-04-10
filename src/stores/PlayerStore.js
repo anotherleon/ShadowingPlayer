@@ -1,14 +1,13 @@
 import { observable, computed, action } from 'mobx';
-import AsyncStorage from '@react-native-community/async-storage';
-
 class PlayerStore {
     @observable state = {
-        filePath: '/',
+        filePath: '',
         fileList: [],
         fileName: '',
         paused: true,
         duration: Infinity,
         currentTime: 0.0,
+        seekTime: 0.0,
         rate: 1,
         volume: 1,
         muted: false,
@@ -16,33 +15,18 @@ class PlayerStore {
         mode: 'repeat', // repeat repeatOnce random
         modeDesc: '列表循环',
         currentIndex: 0,
-        // isShowQueue: false,
     };
+
+    @computed get isShowController() {
+        return !!this.state.filePath;
+    }
 
     play = () => {
         if (this.state.paused && Math.floor(this.state.currentTime) === this.state.duration) {
-            this.player.seek(0);
+            this.state.seekTime = 0;
         }
         this.state.paused = !this.state.paused;
     };
-
-    // __seek = second => {
-    //     this.player.seek(second);
-    // };
-
-    // __setRepeat = repeat => {
-    //     this.setState({
-    //         repeat: repeat,
-    //     });
-    // };
-
-    // __setFilePath = (filePath, currentIndex) => {
-    //     this.setState({
-    //         filePath,
-    //         currentIndex,
-    //     });
-    //     AsyncStorage.setItem('filePath', filePath);
-    // };
 
     @action
     next = next => {
@@ -63,6 +47,7 @@ class PlayerStore {
             this.state.filePath = fileList[i + next].filePath;
             this.state.fileName = fileList[i + next].name;
             this.state.currentIndex = i + next;
+            this.state.paused = false;
         } else if (mode === 'random') {
             if (i + next < 0 && next === -1) {
                 this.state.paused = true;
@@ -82,6 +67,7 @@ class PlayerStore {
             this.state.filePath = filePath;
             this.state.fileName = fileName;
             this.state.currentIndex = currentIndex;
+            this.state.paused = false;
         }
     };
 
@@ -110,31 +96,13 @@ class PlayerStore {
         this.state.currentTime = data.currentTime;
     };
 
-    // // handleProgressPress = e => {
-    // //     const pageX = e.nativeEvent.pageX;
-    // //     const seekTime = Math.floor(((pageX - 64) / (SCREEN_WIDTH - 64 * 2)) * this.state.duration);
-    // //     !!seekTime && this.player.seek(seekTime);
-    // // };
-
     handleEnd = () => {
         if (this.state.mode === 'repeatOnce') {
             return;
         }
+        this.state.paused = true;
         this.next(1);
     };
-
-    // // handleQueue = () => {
-    // //     this.setState({ isShowQueue: true });
-    // // };
-
-    // handleAudioBecomingNoisy = () => {
-    //     this.setState({ paused: true });
-    // };
-
-    // // handleProgress = data => {
-    // //     !!AudioPlayer.__instance.onProgress && AudioPlayer.__instance.onProgress(data);
-    // //     this.setState({ currentTime: data.currentTime });
-    // // };
 
     handleQueueItem(filePath, currentIndex) {
         this.state.paused = false;

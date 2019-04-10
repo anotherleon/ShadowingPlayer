@@ -1,29 +1,38 @@
 import React from 'react';
-import { View, Text, Image } from 'react-native';
+import { View, Text, Image, TouchableOpacity } from 'react-native';
 import TouchableImage from './TouchableImage';
 import Icon from '../../assets/Icon';
-import AudioPlayer from './AudioPlayer';
 import PlayerStore from '../../stores/PlayerStore';
+import AudioPlayer from './AudioPlayer';
 import { observer } from 'mobx-react';
-import { TouchableOpacity } from 'react-native-gesture-handler';
 
 @observer
 class AudioCtroller extends React.Component {
-    state = {
-        paused: true,
+    handlePress = () => {
+        this.props.onPress();
     };
-    // handlePress = (fileName, filePath, fileList) => {
-    //     this.props.navigation.push('Player', {
-    //         fileName,
-    //         filePath,
-    //         fileList,
-    //     });
-    // };
+
+    handlePlay = () => {
+        PlayerStore.play();
+        if (!PlayerStore.state.currentTime && PlayerStore.state.seekTime) {
+            AudioPlayer.seek(PlayerStore.state.seekTime);
+        }
+    };
+
+    handleNext = () => {
+        PlayerStore.next(1);
+    };
+
+    handlePrev = () => {
+        PlayerStore.next(-1);
+    };
+
     render() {
+        const { fileName, paused } = PlayerStore.state;
         return (
             <TouchableOpacity
                 activeOpacity={1}
-                // onPress={this.handlePress}
+                onPress={this.handlePress}
                 style={{
                     position: 'absolute',
                     bottom: 0,
@@ -38,33 +47,15 @@ class AudioCtroller extends React.Component {
                 <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
                     <Image source={{ uri: Icon.audio }} style={{ width: 44, height: 44, marginRight: 8 }} />
                     <Text style={{ flex: 1 }} numberOfLines={1}>
-                        哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈
+                        {fileName}
                     </Text>
                 </View>
                 <View style={{ marginHorizontal: 8, flexDirection: 'row', alignItems: 'center' }}>
-                    <TouchableImage
-                        src={Icon.prev}
-                        size={32}
-                        onPress={() => {
-                            AudioPlayer.prev();
-                        }}
-                    />
+                    <TouchableImage src={Icon.prev} size={32} onPress={this.handlePrev} />
                     <View style={{ marginHorizontal: 4 }}>
-                        <TouchableImage
-                            src={PlayerStore.state.paused ? Icon.play : Icon.pause}
-                            size={44}
-                            onPress={() => {
-                                PlayerStore.play();
-                            }}
-                        />
+                        <TouchableImage src={paused ? Icon.play : Icon.pause} size={44} onPress={this.handlePlay} />
                     </View>
-                    <TouchableImage
-                        src={Icon.next}
-                        size={32}
-                        onPress={() => {
-                            AudioPlayer.next();
-                        }}
-                    />
+                    <TouchableImage src={Icon.next} size={32} onPress={this.handleNext} />
                 </View>
             </TouchableOpacity>
         );
