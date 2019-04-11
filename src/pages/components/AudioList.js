@@ -40,7 +40,7 @@ const styles = StyleSheet.create({
         paddingVertical: 8,
         borderBottomWidth: StyleSheet.hairlineWidth,
         borderColor: '#EDEDF0',
-        // backgroundColor: '#fff',
+        backgroundColor: '#fff',
     },
 });
 

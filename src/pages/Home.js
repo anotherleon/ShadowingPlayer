@@ -47,25 +47,20 @@ class Home extends React.Component {
         });
 
         AsyncStorage.getItem('fileName').then(res => {
-            console.log('fileName ==== \n', res);
             PlayerStore.state.fileName = res;
         });
 
         AsyncStorage.getItem('filePath').then(res => {
-            console.log('filePath ==== \n', res);
             PlayerStore.state.filePath = res;
         });
 
         AsyncStorage.getItem('fileList').then(res => {
-            console.log('fileList ==== \n', res);
             PlayerStore.state.fileList = res;
         });
-       
+
         AsyncStorage.getItem('seekTime').then(res => {
-            console.log('seekTime ==== \n', res);
             PlayerStore.state.seekTime = res;
         });
-
     }
 
     componentWillUnmount() {
@@ -88,7 +83,6 @@ class Home extends React.Component {
         return (
             <SafeAreaView style={styles.container}>
                 <ScrollView>
-                    {!this.state.loading && <View style={{ height: 8, backgroundColor: '#fff' }} />}
                     {this.state.loading && !directory.length && (
                         <View style={{ padding: 16, backgroundColor: '#fff' }}>
                             <Text>文件扫描中...</Text>

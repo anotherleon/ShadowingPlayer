@@ -29,7 +29,6 @@ class AudioListPage extends React.Component {
         const { isShowController } = PlayerStore;
         return (
             <View style={styles.container}>
-                <View style={{ height: 8 }} />
                 <AudioList fileList={fileList} onPress={this.handlePress} />
                 <View style={{ height: isShowController ? 64 : 16, backgroundColor: 'transparent' }} />
                 {isShowController && (
